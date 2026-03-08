@@ -45,7 +45,7 @@ export default function KhoMay() {
     finalPrice: true,
   });
   const [showColumnSettings, setShowColumnSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ALL' | 'TECH_INVENTORY' | 'SHOP_DEVICES' | 'TRADE_IN' | 'WARRANTY' | 'SERVICE' | 'CHO_TRA_NCC' | 'DA_TRA_NCC'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'TECH_INVENTORY' | 'SHOP_DEVICES' | 'TRADE_IN' | 'WARRANTY' | 'SERVICE' | 'CHO_TRA_NCC' | 'DA_TRA_NCC' | 'COMPLETED'>('ALL');
 
   const technicians = state.users.filter(u => u.role === 'KY_THUAT');
 
@@ -141,20 +141,21 @@ export default function KhoMay() {
     
     if (!matchesSearch) return false;
 
-    if (activeTab === 'ALL') return d.status !== 'DA_TRA_NCC' && d.status !== 'CHO_TRA_NCC';
+    if (activeTab === 'ALL') return d.status !== 'DA_TRA_NCC' && d.status !== 'CHO_TRA_NCC' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
     if (activeTab === 'TECH_INVENTORY') {
       // Exclude devices that are already at a shop or sold or returned to NCC
       if (d.location && d.location !== 'KHO_TONG') return false;
-      if (d.status === 'DA_TRA_NCC' || d.status === 'CHO_TRA_NCC') return false;
+      if (d.status === 'DA_TRA_NCC' || d.status === 'CHO_TRA_NCC' || d.status === 'DA_BAN' || d.status === 'HOAN_TAT') return false;
       
       const assigneeId = getDeviceAssigneeId(d);
       if (selectedTechId !== 'ALL' && assigneeId !== selectedTechId) return false;
       return true;
     }
-    if (activeTab === 'SHOP_DEVICES') return d.receptionType === 'SHOP_TRANSFER';
-    if (activeTab === 'TRADE_IN') return d.receptionType === 'TRADE_IN' || d.status === 'TRADE_IN';
-    if (activeTab === 'WARRANTY') return d.receptionType === 'WARRANTY';
-    if (activeTab === 'SERVICE') return d.receptionType === 'SERVICE';
+    if (activeTab === 'SHOP_DEVICES') return d.receptionType === 'SHOP_TRANSFER' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
+    if (activeTab === 'TRADE_IN') return (d.receptionType === 'TRADE_IN' || d.status === 'TRADE_IN') && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
+    if (activeTab === 'WARRANTY') return d.receptionType === 'WARRANTY' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
+    if (activeTab === 'SERVICE') return d.receptionType === 'SERVICE' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
+    if (activeTab === 'COMPLETED') return d.status === 'DA_BAN' || d.status === 'HOAN_TAT';
     
     return d.status === activeTab;
   });
@@ -220,6 +221,12 @@ export default function KhoMay() {
                   onClick={() => setActiveTab('SERVICE')}
                 >
                   Sửa Lẻ
+                </button>
+                <button
+                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'COMPLETED' ? 'bg-dark-bg text-neon-green shadow-sm border border-neon-green/30' : 'text-dark-muted hover:text-dark-text'}`}
+                  onClick={() => setActiveTab('COMPLETED')}
+                >
+                  Đã Hoàn Tất
                 </button>
                 <button
                   className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'CHO_TRA_NCC' ? 'bg-dark-bg text-neon-pink shadow-sm border border-neon-pink/30' : 'text-dark-muted hover:text-dark-text'}`}

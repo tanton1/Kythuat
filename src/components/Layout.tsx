@@ -89,7 +89,14 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { state, dispatch } = useAppContext();
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+
+  // Close sidebar on mobile when route changes
+  React.useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = state.users.find((u) => u.id === e.target.value);
@@ -120,7 +127,7 @@ export default function Layout() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-dark-card border-r border-dark-border flex flex-col transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-dark-card border-r border-dark-border flex flex-col transform transition-transform duration-300 ease-in-out",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 border-b border-dark-border flex justify-between items-center">
@@ -132,7 +139,7 @@ export default function Layout() {
               Hệ thống quản lý kỹ thuật
             </p>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-dark-muted hover:bg-dark-border hover:text-dark-text rounded-md">
+          <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-dark-muted hover:bg-dark-border hover:text-dark-text rounded-md">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -206,12 +213,15 @@ export default function Layout() {
       </aside>
 
       {/* Main Content Wrapper */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ease-in-out",
+        isSidebarOpen ? "lg:ml-64" : "lg:ml-0"
+      )}>
         {/* Header (Mobile & Desktop) */}
-        <header className="bg-dark-card border-b border-dark-border shrink-0">
+        <header className="bg-dark-card border-b border-dark-border shrink-0 sticky top-0 z-30">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 lg:px-8 gap-4">
             <div className="flex items-center justify-between sm:w-auto">
-              <div className="flex items-center lg:hidden">
+              <div className="flex items-center">
                 <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 mr-2 text-dark-muted hover:bg-dark-border rounded-md">
                   <Menu className="w-6 h-6" />
                 </button>

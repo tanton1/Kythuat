@@ -93,12 +93,12 @@ export default function PhanPhoi() {
       type: 'UPDATE_DEVICE',
       payload: {
         ...selectedDevice,
-        status: 'DA_BAN', // Mark as sold/delivered
-        location: 'DA_BAN',
+        status: 'HOAN_TAT', // Use HOAN_TAT for service return
+        location: 'DA_BAN', // Still mark as out of inventory
         sellPrice,
         customerInfo: selectedDevice.customerInfo || customerInfo,
         sellDate: format(new Date(), 'yyyy-MM-dd HH:mm'),
-        notes: `${selectedDevice.notes}\n[TRẢ MÁY SỬA LẺ]: Thu tiền ${sellPrice.toLocaleString()}đ từ KH: ${selectedDevice.customerInfo || customerInfo}`,
+        notes: `${selectedDevice.notes}\n[TRẢ MÁY SỬA LẺ]: Hoàn tất & Thu tiền ${sellPrice.toLocaleString()}đ từ KH: ${selectedDevice.customerInfo || customerInfo}`,
       }
     });
 
@@ -116,10 +116,10 @@ export default function PhanPhoi() {
       type: 'UPDATE_DEVICE',
       payload: {
         ...selectedDevice,
-        status: 'DA_BAN', // Mark as delivered
+        status: 'HOAN_TAT', // Use HOAN_TAT for warranty return
         location: 'DA_BAN',
         sellDate: format(new Date(), 'yyyy-MM-dd HH:mm'),
-        notes: `${selectedDevice.notes}\n[TRẢ MÁY BẢO HÀNH]: Trả máy cho KH: ${selectedDevice.customerInfo || customerInfo}`,
+        notes: `${selectedDevice.notes}\n[TRẢ MÁY BẢO HÀNH]: Hoàn tất & Trả máy cho KH: ${selectedDevice.customerInfo || customerInfo}`,
       }
     });
 

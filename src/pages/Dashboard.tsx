@@ -8,7 +8,9 @@ import {
   Wrench,
   AlertTriangle,
   DollarSign,
-  Users
+  Users,
+  Smartphone,
+  Store
 } from "lucide-react";
 import {
   BarChart,
@@ -38,15 +40,37 @@ export default function Dashboard() {
   const { state } = useAppContext();
 
   const totalDevices = state.devices.length;
-  const pendingTest = state.devices.filter((d) => d.status === "CHO_TEST").length;
-  const pendingDecision = state.devices.filter((d) => d.status === "CHO_QUYET_DINH").length;
-  const pendingTask = state.devices.filter((d) => d.status === "CHO_PHAN_TASK").length;
-  const inProgress = state.devices.filter((d) => d.status === "DANG_XU_LY").length;
-  const pendingQC = state.devices.filter((d) => d.status === "CHO_QC").length;
+
+  // Group 1: Máy Đang Xử Lý (Tại Kho Tổng/Kỹ Thuật)
+  const pendingTest = state.devices.filter((d) => 
+    ["MOI_NHAP", "CHO_TEST", "DA_TEST"].includes(d.status)
+  ).length;
+  
+  const inTechnical = state.devices.filter((d) => 
+    ["CHO_PHAN_TASK", "DANG_XU_LY", "CHO_LINH_KIEN", "CHO_QC", "CHO_QUYET_DINH", "BAO_HANH"].includes(d.status)
+  ).length;
+  
+  const inMainStock = state.devices.filter((d) => 
+    ["CHO_BAN", "TRADE_IN", "MAY_XAC"].includes(d.status) && (!d.location || d.location === "KHO_TONG")
+  ).length;
+  
+  // Group 2: Máy Đã Xuất Kho / Hoàn Tất
+  const atShops = state.devices.filter((d) => 
+    d.status === "CHO_BAN" && d.location && d.location !== "KHO_TONG" && d.location !== "DA_BAN"
+  ).length;
+  
+  const sold = state.devices.filter((d) => d.status === "DA_BAN" || d.location === "DA_BAN").length;
+  
+  const finished = state.devices.filter((d) => 
+    d.status === "HOAN_TAT" || d.status === "DA_TRA_NCC" || d.status === "CHO_TRA_NCC"
+  ).length;
+
+  const totalActive = pendingTest + inTechnical + inMainStock;
+  const totalCompleted = atShops + sold + finished;
 
   // 1. Biểu đồ số lượng máy kỹ thuật đang xử lý theo nguồn
   const devicesInProgress = state.devices.filter(d => 
-    d.status === "DANG_XU_LY" || d.status === "CHO_LINH_KIEN"
+    ["DANG_XU_LY", "CHO_LINH_KIEN", "CHO_QC", "CHO_PHAN_TASK", "BAO_HANH", "CHO_TEST"].includes(d.status)
   );
   
   const processingBySourceData = useMemo(() => {
@@ -105,17 +129,83 @@ export default function Dashboard() {
   const totalCommission = commissionData.reduce((sum, item) => sum + item.commission, 0);
 
   return (
-    <div className="space-y-6 pb-12">
-      <h1 className="text-2xl font-bold text-neon-cyan neon-text">Tổng Quan Hệ Thống</h1>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard title="Tổng Máy" value={totalDevices} icon={Activity} color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" />
-        <StatCard title="Chờ Test" value={pendingTest} icon={Clock} color="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30" />
-        <StatCard title="Chờ Quyết Định" value={pendingDecision} icon={AlertCircle} color="bg-neon-pink/10 text-neon-pink border border-neon-pink/30" />
-        <StatCard title="Chờ Phân Task" value={pendingTask} icon={Clock} color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" />
-        <StatCard title="Đang Sửa" value={inProgress} icon={Wrench} color="bg-neon-pink/10 text-neon-pink border border-neon-pink/30" />
-        <StatCard title="Chờ QC" value={pendingQC} icon={CheckCircle} color="bg-neon-green/10 text-neon-green border border-neon-green/30" />
+    <div className="space-y-8 pb-12">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-neon-cyan neon-text">Tổng Quan Hệ Thống</h1>
+        <div className="bg-dark-card px-4 py-2 rounded-lg border border-neon-cyan/30 flex items-center">
+          <Activity className="w-5 h-5 mr-2 text-neon-cyan" />
+          <span className="text-sm text-dark-muted mr-2">Tổng máy hệ thống:</span>
+          <span className="text-xl font-bold text-neon-cyan">{totalDevices}</span>
+        </div>
       </div>
+
+      {/* Báo cáo 1: Máy Đang Xử Lý */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-dark-text flex items-center">
+            <Clock className="w-5 h-5 mr-2 text-yellow-500" />
+            Báo Cáo Máy Đang Xử Lý ({totalActive})
+          </h2>
+          <div className="h-px flex-1 bg-dark-border mx-4"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard 
+            title="Tiếp Nhận & Test" 
+            value={pendingTest} 
+            icon={Smartphone} 
+            color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" 
+            subtitle="Mới nhập, Chờ test, Đã test"
+          />
+          <StatCard 
+            title="Đang Xử Lý KT" 
+            value={inTechnical} 
+            icon={Wrench} 
+            color="bg-neon-pink/10 text-neon-pink border border-neon-pink/30" 
+            subtitle="Sửa chữa, Chờ linh kiện, QC"
+          />
+          <StatCard 
+            title="Tồn Kho Tổng" 
+            value={inMainStock} 
+            icon={CheckCircle} 
+            color="bg-neon-green/10 text-neon-green border border-neon-green/30" 
+            subtitle="Chờ bán, Trade-in, Máy xác"
+          />
+        </div>
+      </section>
+
+      {/* Báo cáo 2: Máy Đã Hoàn Tất / Xuất Kho */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-dark-text flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2 text-neon-green" />
+            Báo Cáo Máy Đã Hoàn Tất / Xuất Kho ({totalCompleted})
+          </h2>
+          <div className="h-px flex-1 bg-dark-border mx-4"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard 
+            title="Đã Chuyển Shop" 
+            value={atShops} 
+            icon={Store} 
+            color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" 
+            subtitle="Máy đang trưng bày tại các Shop"
+          />
+          <StatCard 
+            title="Đã Xuất Bán" 
+            value={sold} 
+            icon={DollarSign} 
+            color="bg-neon-green/10 text-neon-green border border-neon-green/30" 
+            subtitle="Đã bán cho khách/shop"
+          />
+          <StatCard 
+            title="Hoàn Tất / Trả NCC" 
+            value={finished} 
+            icon={AlertCircle} 
+            color="bg-dark-border text-dark-muted border border-dark-border" 
+            subtitle="Sửa lẻ xong, Trả bảo hành, Trả NCC"
+          />
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {/* Biểu đồ máy đang xử lý */}
@@ -275,7 +365,7 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color }: any) {
+function StatCard({ title, value, icon: Icon, color, subtitle }: any) {
   return (
     <div className="bg-dark-card rounded-xl shadow-sm border border-dark-border p-3 sm:p-6 flex items-center">
       <div className={`p-2 sm:p-3 rounded-lg ${color}`}>
@@ -284,6 +374,7 @@ function StatCard({ title, value, icon: Icon, color }: any) {
       <div className="ml-3 sm:ml-4 overflow-hidden">
         <p className="text-[10px] sm:text-sm font-medium text-dark-muted truncate">{title}</p>
         <p className="text-lg sm:text-2xl font-semibold text-dark-text">{value}</p>
+        {subtitle && <p className="text-[9px] sm:text-[11px] text-dark-muted mt-1 truncate">{subtitle}</p>}
       </div>
     </div>
   );
