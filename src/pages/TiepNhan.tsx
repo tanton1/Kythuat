@@ -92,7 +92,7 @@ export default function TiepNhan() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <h1 className="text-2xl font-bold text-neon-cyan neon-text">Tiếp Nhận Máy</h1>
         <div className="bg-dark-card p-1 rounded-lg border border-dark-border w-full lg:w-auto overflow-hidden">
