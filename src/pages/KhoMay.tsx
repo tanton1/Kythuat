@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
 import { Device, DeviceStatus, Supplier } from "../types";
 import { Plus, Search, Smartphone, Settings2, XCircle, History, User, Clock, ArrowRightLeft, Info, ChevronRight } from "lucide-react";
+import SearchableSelect from "../components/SearchableSelect";
 import { format } from "date-fns";
 
 export default function KhoMay() {
@@ -47,6 +48,8 @@ export default function KhoMay() {
   const [activeTab, setActiveTab] = useState<'ALL' | 'TECH_INVENTORY' | 'SHOP_DEVICES' | 'TRADE_IN' | 'WARRANTY' | 'SERVICE' | 'CHO_TRA_NCC' | 'DA_TRA_NCC'>('ALL');
 
   const technicians = state.users.filter(u => u.role === 'KY_THUAT');
+
+  const uniqueModels: string[] = Array.from(new Set(state.products.map(p => p.model))).filter((m): m is string => !!m).sort();
 
   const SHOP_LABELS: Record<string, string> = {
     KHO_TONG: 'Kho Tổng',
@@ -318,22 +321,14 @@ export default function KhoMay() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-dark-muted">
-                Model *
-              </label>
-              <select
+              <SearchableSelect
+                label="Model"
                 required
-                className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
-                value={newDevice.model}
-                onChange={(e) =>
-                  setNewDevice({ ...newDevice, model: e.target.value })
-                }
-              >
-                <option value="">-- Chọn Model --</option>
-                {state.products.filter(p => p.category === 'DEVICE').map(p => (
-                  <option key={p.id} value={p.model}>{p.name} ({p.model})</option>
-                ))}
-              </select>
+                options={uniqueModels}
+                value={newDevice.model || ""}
+                onChange={(val) => setNewDevice({ ...newDevice, model: val })}
+                placeholder="-- Chọn hoặc nhập Model --"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-dark-muted">

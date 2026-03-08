@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
 import { Product } from "../types";
 import { Plus, Search, Edit, Trash2, Box, Smartphone, Wrench, Settings } from "lucide-react";
+import SearchableSelect from "../components/SearchableSelect";
 
 export default function HangHoa() {
   const { state, dispatch } = useAppContext();
@@ -28,6 +29,8 @@ export default function HangHoa() {
     const matchesCategory = filterCategory === "ALL" || p.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const uniqueModels: string[] = Array.from(new Set(state.products.map(p => p.model))).filter((m): m is string => !!m).sort();
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,13 +124,13 @@ export default function HangHoa() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-dark-muted mb-1">Model Tương Thích *</label>
-              <input
-                type="text" required
-                className="w-full rounded-md p-2 text-sm dark-input"
+              <SearchableSelect
+                label="Model Tương Thích"
+                required
+                options={uniqueModels}
+                value={formData.model || ""}
+                onChange={(val) => setFormData({ ...formData, model: val })}
                 placeholder="VD: iPhone 12 Pro Max"
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
               />
             </div>
             <div>

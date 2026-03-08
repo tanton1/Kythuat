@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
 import { Device, DeviceStatus } from "../types";
+import SearchableSelect from "../components/SearchableSelect";
 import { 
   Store, 
   ShieldAlert, 
@@ -19,6 +20,8 @@ export default function TiepNhan() {
   const [activeTab, setActiveTab] = useState<'SHOP' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN'>('SHOP');
   const [searchImei, setSearchImei] = useState("");
   const [foundDevice, setFoundDevice] = useState<Device | null>(null);
+
+  const uniqueModels: string[] = Array.from(new Set(state.products.map(p => p.model))).filter((m): m is string => !!m).sort();
 
   const [formData, setFormData] = useState<Partial<Device>>({
     imei: "",
@@ -159,41 +162,47 @@ export default function TiepNhan() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-dark-muted">IMEI/Serial *</label>
                   <input
                     type="text" required
-                    className="mt-1 block w-full dark-input p-2 rounded-md"
+                    className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
+                    placeholder="Nhập IMEI hoặc Serial máy..."
                     value={formData.imei}
                     onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-muted">Model *</label>
-                  <input
-                    type="text" required
-                    className="mt-1 block w-full dark-input p-2 rounded-md"
-                    value={formData.model}
-                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                  <SearchableSelect
+                    label="Model"
+                    required
+                    options={uniqueModels}
+                    value={formData.model || ""}
+                    onChange={(val) => setFormData({ ...formData, model: val })}
+                    placeholder="VD: iPhone 13 Pro Max"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-dark-muted">Màu sắc</label>
-                  <input
-                    type="text"
-                    className="mt-1 block w-full dark-input p-2 rounded-md"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-dark-muted">Dung lượng</label>
-                  <input
-                    type="text"
-                    className="mt-1 block w-full dark-input p-2 rounded-md"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-medium text-dark-muted">Màu sắc</label>
+                    <input
+                      type="text"
+                      className="mt-1 block w-full dark-input p-2 rounded-md"
+                      placeholder="Màu"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-dark-muted">Dung lượng</label>
+                    <input
+                      type="text"
+                      className="mt-1 block w-full dark-input p-2 rounded-md"
+                      placeholder="GB"
+                      value={formData.capacity}
+                      onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                    />
+                  </div>
                 </div>
                 
                 {activeTab === 'TRADE_IN' && (
@@ -201,7 +210,7 @@ export default function TiepNhan() {
                     <label className="block text-sm font-medium text-dark-muted">Giá Thu (VNĐ) *</label>
                     <input
                       type="number" required
-                      className="mt-1 block w-full dark-input p-2 rounded-md"
+                      className="mt-1 block w-full dark-input p-2 rounded-md text-neon-green font-bold"
                       value={formData.importPrice}
                       onChange={(e) => setFormData({ ...formData, importPrice: Number(e.target.value) })}
                     />
@@ -231,6 +240,7 @@ export default function TiepNhan() {
                       <input
                         type="text" required
                         className="mt-1 block w-full dark-input p-2 rounded-md"
+                        placeholder="Họ tên khách hàng"
                         value={formData.customerInfo}
                         onChange={(e) => setFormData({ ...formData, customerInfo: e.target.value })}
                       />
@@ -240,6 +250,7 @@ export default function TiepNhan() {
                       <input
                         type="text" required
                         className="mt-1 block w-full dark-input p-2 rounded-md"
+                        placeholder="090..."
                         value={formData.customerPhone}
                         onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
                       />

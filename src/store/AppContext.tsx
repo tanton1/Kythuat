@@ -118,6 +118,29 @@ const MOCK_PRODUCTS: Product[] = [
   { id: "IP-17PL", name: "iPhone 17 Plus", category: "DEVICE", model: "iPhone 17 Plus", costPrice: 26000000, sellPrice: 32000000 },
   { id: "IP-17P", name: "iPhone 17 Pro", category: "DEVICE", model: "iPhone 17 Pro", costPrice: 30000000, sellPrice: 36500000 },
   { id: "IP-17PM", name: "iPhone 17 Pro Max", category: "DEVICE", model: "iPhone 17 Pro Max", costPrice: 33000000, sellPrice: 40500000 },
+  // PIN EU VTECH
+  { id: "PIN-6G-VTECH", name: "Pin 6G EU VTECH", category: "PART", model: "iPhone 6G", costPrice: 80000, sellPrice: 125000 },
+  { id: "PIN-7G-VTECH", name: "Pin 7G EU VTECH", category: "PART", model: "iPhone 7G", costPrice: 90000, sellPrice: 130000 },
+  { id: "PIN-8G-VTECH", name: "Pin 8G EU VTECH", category: "PART", model: "iPhone 8G", costPrice: 95000, sellPrice: 135000 },
+  { id: "PIN-X-VTECH", name: "Pin X EU VTECH", category: "PART", model: "iPhone X", costPrice: 140000, sellPrice: 195000 },
+  { id: "PIN-11-VTECH", name: "Pin 11 EU VTECH", category: "PART", model: "iPhone 11", costPrice: 140000, sellPrice: 195000 },
+  { id: "PIN-12-VTECH", name: "Pin 12/12Pro EU VTECH", category: "PART", model: "iPhone 12", costPrice: 150000, sellPrice: 205000 },
+  { id: "PIN-13-VTECH", name: "Pin 13 EU VTECH", category: "PART", model: "iPhone 13", costPrice: 170000, sellPrice: 235000 },
+  { id: "PIN-14-VTECH", name: "Pin 14 EU VTECH", category: "PART", model: "iPhone 14", costPrice: 200000, sellPrice: 270000 },
+  { id: "PIN-15-VTECH", name: "Pin 15G EU VTECH", category: "PART", model: "iPhone 15", costPrice: 220000, sellPrice: 300000 },
+  // VỎ ZIN THẨM
+  { id: "VO-6S", name: "Vỏ 6S Zin Thẩm", category: "PART", model: "iPhone 6S", costPrice: 50000, sellPrice: 90000 },
+  { id: "VO-7G", name: "Vỏ 7G Zin Thẩm", category: "PART", model: "iPhone 7G", costPrice: 80000, sellPrice: 125000 },
+  { id: "VO-8G", name: "Vỏ 8G Zin Thẩm", category: "PART", model: "iPhone 8G", costPrice: 100000, sellPrice: 150000 },
+  { id: "VO-X", name: "Vỏ X Zin Thẩm", category: "PART", model: "iPhone X", costPrice: 160000, sellPrice: 240000 },
+  { id: "VO-11", name: "Vỏ 11 Zin Thẩm", category: "PART", model: "iPhone 11", costPrice: 130000, sellPrice: 195000 },
+  { id: "VO-12", name: "Vỏ 12 Zin Thẩm", category: "PART", model: "iPhone 12", costPrice: 150000, sellPrice: 220000 },
+  { id: "VO-13", name: "Vỏ 13 Zin Thẩm", category: "PART", model: "iPhone 13", costPrice: 180000, sellPrice: 250000 },
+  // KÍNH LƯNG
+  { id: "KL-8G", name: "Kính Lưng 8G", category: "PART", model: "iPhone 8G", costPrice: 15000, sellPrice: 30000 },
+  { id: "KL-11", name: "Kính Lưng 11 (To)", category: "PART", model: "iPhone 11", costPrice: 25000, sellPrice: 48000 },
+  { id: "KL-12", name: "Kính Lưng 12 (To)", category: "PART", model: "iPhone 12", costPrice: 30000, sellPrice: 57000 },
+  { id: "KL-13", name: "Kính Lưng 13 (To)", category: "PART", model: "iPhone 13", costPrice: 40000, sellPrice: 70000 },
   { id: "LK-PIN-IP12", name: "Pin iPhone 12 Dung Lượng Cao", category: "PART", model: "iPhone 12", costPrice: 280000, sellPrice: 450000 },
 ];
 
