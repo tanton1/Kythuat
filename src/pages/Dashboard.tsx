@@ -10,7 +10,12 @@ import {
   DollarSign,
   Users,
   Smartphone,
-  Store
+  Store,
+  TrendingUp,
+  ArrowRightLeft,
+  ShieldAlert,
+  UserPlus,
+  Package
 } from "lucide-react";
 import {
   BarChart,
@@ -150,7 +155,7 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard 
-            title="Tiếp Nhận & Test" 
+            title="Nhập Hàng & Test" 
             value={pendingTest} 
             icon={Smartphone} 
             color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" 
@@ -204,6 +209,46 @@ export default function Dashboard() {
             color="bg-dark-border text-dark-muted border border-dark-border" 
             subtitle="Sửa lẻ xong, Trả bảo hành, Trả NCC"
           />
+        </div>
+      </section>
+
+      {/* Báo cáo 3: Báo Cáo Tồn Kho Theo Nguồn Gốc */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-dark-text flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2 text-neon-cyan" />
+            Báo Cáo Tồn Kho Theo Nguồn Gốc (Đang Xử Lý)
+          </h2>
+          <div className="h-px flex-1 bg-dark-border mx-4"></div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {Object.entries(RECEPTION_TYPE_MAP).map(([key, label]) => {
+            const count = state.devices.filter(d => 
+              d.receptionType === key && 
+              !["DA_BAN", "HOAN_TAT", "DA_TRA_NCC"].includes(d.status)
+            ).length;
+            
+            let icon = Smartphone;
+            let color = "bg-dark-bg text-dark-muted border border-dark-border";
+            
+            if (key === 'IMPORT') { icon = Package; color = "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30"; }
+            if (key === 'TRADE_IN') { icon = ArrowRightLeft; color = "bg-neon-pink/10 text-neon-pink border border-neon-pink/30"; }
+            if (key === 'WARRANTY') { icon = ShieldAlert; color = "bg-yellow-500/10 text-yellow-500 border border-yellow-500/30"; }
+            if (key === 'SERVICE') { icon = UserPlus; color = "bg-neon-green/10 text-neon-green border border-neon-green/30"; }
+            if (key === 'SHOP_TRANSFER') { icon = Store; color = "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30"; }
+
+            return (
+              <div key={key} className="bg-dark-card p-4 rounded-xl border border-dark-border hover:border-neon-cyan/50 transition-colors cursor-pointer group">
+                <div className="flex justify-between items-start mb-2">
+                  <div className={`p-2 rounded-lg ${color}`}>
+                    {React.createElement(icon, { className: "w-4 h-4" })}
+                  </div>
+                  <span className="text-xl font-bold text-dark-text group-hover:text-neon-cyan transition-colors">{count}</span>
+                </div>
+                <p className="text-xs font-medium text-dark-muted">{label}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 

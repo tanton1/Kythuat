@@ -15,6 +15,7 @@ export type DeviceStatus =
   | "CHO_TEST"
   | "DA_TEST"
   | "CHO_BAN"
+  | "SAN_SANG"
   | "CHO_PHAN_TASK"
   | "CHO_QUYET_DINH"
   | "MAY_XAC"

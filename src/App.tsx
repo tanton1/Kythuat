@@ -17,6 +17,7 @@ import QC from "./pages/QC";
 import NhanVien from "./pages/NhanVien";
 import PhanPhoi from "./pages/PhanPhoi";
 import HangHoa from "./pages/HangHoa";
+import NguonHang from "./pages/NguonHang";
 import BaoCaoThuNhap from "./pages/BaoCaoThuNhap";
 import TiepNhan from "./pages/TiepNhan";
 import QuyetDinh from "./pages/QuyetDinh";
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="qc" element={<QC />} />
         <Route path="phan-phoi" element={<PhanPhoi />} />
         <Route path="hang-hoa" element={<HangHoa />} />
+        <Route path="nguon-hang" element={<NguonHang />} />
         <Route path="bao-cao-thu-nhap" element={<BaoCaoThuNhap />} />
         <Route path="nhan-vien" element={<NhanVien />} />
         <Route path="huong-dan" element={<Guide />} />

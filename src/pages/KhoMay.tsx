@@ -7,19 +7,9 @@ import { format } from "date-fns";
 
 export default function KhoMay() {
   const { state, dispatch } = useAppContext();
-  const [isAdding, setIsAdding] = useState(false);
   const [selectedDeviceForHistory, setSelectedDeviceForHistory] = useState<Device | null>(null);
   const [selectedTechId, setSelectedTechId] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
-  const [newDevice, setNewDevice] = useState<Partial<Device>>({
-    imei: "",
-    model: "iPhone 12 Pro Max",
-    color: "Pacific Blue",
-    capacity: "128GB",
-    source: "",
-    importPrice: 0,
-    notes: "",
-  });
 
   // States for Supplier Modal
   const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -45,7 +35,7 @@ export default function KhoMay() {
     finalPrice: true,
   });
   const [showColumnSettings, setShowColumnSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ALL' | 'TECH_INVENTORY' | 'SHOP_DEVICES' | 'TRADE_IN' | 'WARRANTY' | 'SERVICE' | 'CHO_TRA_NCC' | 'DA_TRA_NCC' | 'COMPLETED'>('ALL');
+  const [activeTab, setActiveTab] = useState<'KHO_TONG' | 'KY_THUAT' | 'QC' | 'CHO_TRA_NCC' | 'DA_TRA_NCC'>('KHO_TONG');
 
   const technicians = state.users.filter(u => u.role === 'KY_THUAT');
 
@@ -103,31 +93,6 @@ export default function KhoMay() {
     return totalCost;
   };
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDevice.imei) return alert("Vui lòng nhập IMEI");
-    if (!newDevice.source) return alert("Vui lòng chọn nguồn máy/nhà cung cấp");
-
-    const device: Device = {
-      id: `dev-${Date.now()}`,
-      imei: newDevice.imei,
-      model: newDevice.model!,
-      color: newDevice.color!,
-      capacity: newDevice.capacity!,
-      source: newDevice.source!,
-      importPrice: Number(newDevice.importPrice),
-      importDate: format(new Date(), "yyyy-MM-dd HH:mm"),
-      receiverId: state.currentUser!.id,
-      status: "CHO_TEST",
-      notes: newDevice.notes || "",
-      images: [], // Mock images
-    };
-
-    dispatch({ type: "ADD_DEVICE", payload: device });
-    setIsAdding(false);
-    setNewDevice({ ...newDevice, imei: "", notes: "", source: "" });
-  };
-
   const handleReturnToNCC = (device: Device) => {
     dispatch({
       type: "UPDATE_DEVICE",
@@ -141,23 +106,51 @@ export default function KhoMay() {
     
     if (!matchesSearch) return false;
 
-    if (activeTab === 'ALL') return d.status !== 'DA_TRA_NCC' && d.status !== 'CHO_TRA_NCC' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
-    if (activeTab === 'TECH_INVENTORY') {
-      // Exclude devices that are already at a shop or sold or returned to NCC
-      if (d.location && d.location !== 'KHO_TONG') return false;
-      if (d.status === 'DA_TRA_NCC' || d.status === 'CHO_TRA_NCC' || d.status === 'DA_BAN' || d.status === 'HOAN_TAT') return false;
+    // Exclusion: Sold or Returned devices are generally not in "Kho Máy" management
+    // unless explicitly looking at "Đã trả NCC" history
+    if (activeTab !== 'DA_TRA_NCC' && (d.status === 'DA_BAN' || d.status === 'DA_TRA_NCC')) return false;
+
+    // Exclusion: Devices at shops with no active task are not under technical stock management
+    const activeTask = state.tasks.find(t => t.deviceId === d.id && !['DONG_TASK', 'HUY_TASK'].includes(t.status));
+    if (!activeTask && d.location && d.location !== 'KHO_TONG') return false;
+
+    if (activeTab === 'KHO_TONG') {
+      // Kho Kỹ thuật trưởng (Kho Tổng):
+      // 1. Không có task đang xử lý (activeTask is null)
+      // 2. Hoặc máy đã Hoàn tất (HOAN_TAT) - chuyển về Kỹ thuật trưởng
+      // 3. Hoặc máy mới nhập (CHO_TEST, DA_TEST, SAN_SANG, CHO_BAN, CHO_PHAN_TASK)
+      if (d.status === 'CHO_QC') return false; // QC is separate
+      if (activeTask && d.status !== 'HOAN_TAT') return false; // If has active task and not finished, it's with tech
       
-      const assigneeId = getDeviceAssigneeId(d);
-      if (selectedTechId !== 'ALL' && assigneeId !== selectedTechId) return false;
+      return (
+        d.status === 'SAN_SANG' || 
+        d.status === 'CHO_TEST' || 
+        d.status === 'DA_TEST' ||
+        d.status === 'CHO_BAN' ||
+        d.status === 'CHO_PHAN_TASK' ||
+        d.status === 'CHO_QUYET_DINH' ||
+        d.status === 'HOAN_TAT' ||
+        d.status === 'MOI_NHAP'
+      );
+    }
+
+    if (activeTab === 'KY_THUAT') {
+      // Kho các thành viên kỹ thuật khác: Có task đang xử lý và chưa hoàn tất/QC
+      if (!activeTask) return false;
+      if (d.status === 'HOAN_TAT' || d.status === 'CHO_QC') return false;
+      
+      if (selectedTechId !== 'ALL' && activeTask.assigneeId !== selectedTechId) return false;
       return true;
     }
-    if (activeTab === 'SHOP_DEVICES') return d.receptionType === 'SHOP_TRANSFER' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
-    if (activeTab === 'TRADE_IN') return (d.receptionType === 'TRADE_IN' || d.status === 'TRADE_IN') && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
-    if (activeTab === 'WARRANTY') return d.receptionType === 'WARRANTY' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
-    if (activeTab === 'SERVICE') return d.receptionType === 'SERVICE' && d.status !== 'DA_BAN' && d.status !== 'HOAN_TAT';
-    if (activeTab === 'COMPLETED') return d.status === 'DA_BAN' || d.status === 'HOAN_TAT';
+
+    if (activeTab === 'QC') {
+      return d.status === 'CHO_QC';
+    }
+
+    if (activeTab === 'CHO_TRA_NCC') return d.status === 'CHO_TRA_NCC';
+    if (activeTab === 'DA_TRA_NCC') return d.status === 'DA_TRA_NCC';
     
-    return d.status === activeTab;
+    return true;
   });
 
   const handleAddSupplier = (e: React.FormEvent) => {
@@ -173,7 +166,6 @@ export default function KhoMay() {
     };
 
     dispatch({ type: "ADD_SUPPLIER", payload: newSupplier });
-    setNewDevice({ ...newDevice, source: newSupplier.name });
     setShowSupplierModal(false);
     setSupplierForm({ name: "", phone: "", address: "", notes: "" });
     alert("Đã thêm nhà cung cấp mới!");
@@ -182,91 +174,55 @@ export default function KhoMay() {
   return (
     <div className="space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <h1 className="text-2xl font-bold text-neon-cyan neon-text">Quản Lý Kho Máy</h1>
+          <h1 className="text-2xl font-bold text-neon-cyan neon-text">Quản Lý Kho Máy Theo Vị Trí</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-            <div className="bg-dark-card p-1 rounded-lg border border-dark-border overflow-hidden flex-1">
-              <div className="tab-scroll p-1">
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'ALL' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('ALL')}
-                >
-                  Tất cả
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'TECH_INVENTORY' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('TECH_INVENTORY')}
-                >
-                  Tồn Kỹ Thuật
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'SHOP_DEVICES' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('SHOP_DEVICES')}
-                >
-                  Máy từ Shop
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'TRADE_IN' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('TRADE_IN')}
-                >
-                  Máy Thu Cũ
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'WARRANTY' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('WARRANTY')}
-                >
-                  Bảo Hành
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'SERVICE' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('SERVICE')}
-                >
-                  Sửa Lẻ
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'COMPLETED' ? 'bg-dark-bg text-neon-green shadow-sm border border-neon-green/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('COMPLETED')}
-                >
-                  Đã Hoàn Tất
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'CHO_TRA_NCC' ? 'bg-dark-bg text-neon-pink shadow-sm border border-neon-pink/30' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('CHO_TRA_NCC')}
-                >
-                  Chờ Trả NCC
-                </button>
-                <button
-                  className={`px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'DA_TRA_NCC' ? 'bg-dark-bg text-dark-muted shadow-sm border border-dark-border' : 'text-dark-muted hover:text-dark-text'}`}
-                  onClick={() => setActiveTab('DA_TRA_NCC')}
-                >
-                  Đã Trả NCC
-                </button>
-              </div>
-            </div>
+          </div>
+        </div>
+
+        <div className="bg-dark-card p-1 rounded-lg border border-dark-border overflow-hidden">
+          <div className="tab-scroll p-1 flex gap-2">
             <button
-              onClick={() => setIsAdding(true)}
-              className="px-4 py-2 rounded-lg text-sm font-medium flex justify-center items-center neon-button"
+              className={`px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${activeTab === 'KHO_TONG' ? 'bg-neon-cyan text-dark-bg' : 'text-dark-muted hover:text-dark-text'}`}
+              onClick={() => setActiveTab('KHO_TONG')}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nhập Máy Mới
+              Kho Kỹ Thuật Trưởng
+            </button>
+            <button
+              className={`px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${activeTab === 'KY_THUAT' ? 'bg-neon-cyan text-dark-bg' : 'text-dark-muted hover:text-dark-text'}`}
+              onClick={() => setActiveTab('KY_THUAT')}
+            >
+              Kho Kỹ Thuật Viên
+            </button>
+            <button
+              className={`px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${activeTab === 'QC' ? 'bg-neon-cyan text-dark-bg' : 'text-dark-muted hover:text-dark-text'}`}
+              onClick={() => setActiveTab('QC')}
+            >
+              Kho QC
+            </button>
+            <button
+              className={`px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${activeTab === 'CHO_TRA_NCC' ? 'bg-neon-pink/20 text-neon-pink border border-neon-pink/30' : 'text-dark-muted hover:text-dark-text'}`}
+              onClick={() => setActiveTab('CHO_TRA_NCC')}
+            >
+              Chờ Trả NCC
+            </button>
+            <button
+              className={`px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${activeTab === 'DA_TRA_NCC' ? 'bg-dark-bg text-dark-muted border border-dark-border' : 'text-dark-muted hover:text-dark-text'}`}
+              onClick={() => setActiveTab('DA_TRA_NCC')}
+            >
+              Đã Trả NCC
             </button>
           </div>
         </div>
 
-        {activeTab === 'TECH_INVENTORY' && (
+        {activeTab === 'KY_THUAT' && (
           <div className="flex items-center space-x-4 bg-dark-card p-4 rounded-xl border border-dark-border">
-            <span className="text-sm font-medium text-dark-muted">Vị trí kho:</span>
+            <span className="text-sm font-medium text-dark-muted">Kỹ thuật viên:</span>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedTechId('ALL')}
                 className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${selectedTechId === 'ALL' ? 'bg-neon-cyan text-dark-bg' : 'bg-dark-bg text-dark-muted border border-dark-border'}`}
               >
-                Tất cả
-              </button>
-              <button
-                onClick={() => setSelectedTechId('KHO_TONG')}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${selectedTechId === 'KHO_TONG' ? 'bg-neon-cyan text-dark-bg' : 'bg-dark-bg text-dark-muted border border-dark-border'}`}
-              >
-                Kho Tổng
+                Tất cả KTV
               </button>
               {technicians.map(tech => (
                 <button
@@ -274,7 +230,7 @@ export default function KhoMay() {
                   onClick={() => setSelectedTechId(tech.id)}
                   className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${selectedTechId === tech.id ? 'bg-neon-cyan text-dark-bg' : 'bg-dark-bg text-dark-muted border border-dark-border'}`}
                 >
-                  KT: {tech.name}
+                  {tech.name}
                 </button>
               ))}
             </div>
@@ -305,114 +261,6 @@ export default function KhoMay() {
             </p>
           </div>
         </div>
-
-      {isAdding && (
-        <div className="bg-dark-card p-6 rounded-xl shadow-sm border border-dark-border">
-          <h2 className="text-lg font-semibold mb-4 text-dark-text">Tạo Hồ Sơ Máy</h2>
-          <form
-            onSubmit={handleAdd}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
-            <div>
-              <label className="block text-sm font-medium text-dark-muted">
-                IMEI/Serial *
-              </label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
-                value={newDevice.imei}
-                onChange={(e) =>
-                  setNewDevice({ ...newDevice, imei: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <SearchableSelect
-                label="Model"
-                required
-                options={uniqueModels}
-                value={newDevice.model || ""}
-                onChange={(val) => setNewDevice({ ...newDevice, model: val })}
-                placeholder="-- Chọn hoặc nhập Model --"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-dark-muted">
-                Nguồn Máy (Nhà Cung Cấp) *
-              </label>
-              <div className="flex space-x-2 mt-1">
-                <select
-                  required
-                  className="block w-full rounded-md sm:text-sm p-2 dark-input"
-                  value={newDevice.source}
-                  onChange={(e) =>
-                    setNewDevice({ ...newDevice, source: e.target.value })
-                  }
-                >
-                  <option value="">-- Chọn Nguồn / NCC --</option>
-                  {state.suppliers.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
-                <button 
-                  type="button"
-                  onClick={() => setShowSupplierModal(true)}
-                  className="px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-neon-cyan hover:bg-dark-border/50"
-                  title="Thêm Nhà Cung Cấp Mới"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-dark-muted">
-                Giá Nhập (VNĐ)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
-                value={newDevice.importPrice}
-                onChange={(e) =>
-                  setNewDevice({
-                    ...newDevice,
-                    importPrice: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-dark-muted">
-                Tình trạng ngoại hình sơ bộ
-              </label>
-              <textarea
-                className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
-                rows={3}
-                placeholder="Ví dụ: Xước dăm viền, kính lưng nứt nhẹ..."
-                value={newDevice.notes}
-                onChange={(e) =>
-                  setNewDevice({ ...newDevice, notes: e.target.value })
-                }
-              />
-            </div>
-            <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-              <button
-                type="button"
-                onClick={() => setIsAdding(false)}
-                className="px-4 py-2 border border-dark-border rounded-md text-sm font-medium text-dark-muted hover:bg-dark-border hover:text-dark-text"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-md shadow-sm text-sm font-medium neon-button-green"
-              >
-                Lưu Hồ Sơ
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       <div className="bg-dark-card rounded-xl shadow-sm border border-dark-border">
         <div className="p-4 border-b border-dark-border bg-dark-bg/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-t-xl">

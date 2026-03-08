@@ -38,7 +38,7 @@ const NAV_ITEMS = [
   },
   {
     path: "/tiep-nhan",
-    label: "Tiếp Nhận Máy",
+    label: "Nhập Hàng",
     icon: UserPlus,
     roles: ["ADMIN", "KHO_MAY", "TESTER"],
   },
@@ -81,6 +81,7 @@ const NAV_ITEMS = [
   { path: "/qc", label: "QC", icon: ShieldCheck, roles: ["ADMIN", "QC"] },
   { path: "/phan-phoi", label: "Phân Phối & Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"] },
   { path: "/hang-hoa", label: "Hàng Hóa", icon: Package, roles: ["ADMIN"] },
+  { path: "/nguon-hang", label: "Nguồn Hàng", icon: Package, roles: ["ADMIN", "KHO_MAY"] },
   { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"] },
   { path: "/nhan-vien", label: "Nhân Viên", icon: Users, roles: ["ADMIN"] },
   { path: "/huong-dan", label: "Hướng Dẫn", icon: HelpCircle, roles: ["ADMIN", "KHO_MAY", "TESTER", "TRUONG_KT", "KY_THUAT", "KHO_LINH_KIEN", "QC", "SALE"] },

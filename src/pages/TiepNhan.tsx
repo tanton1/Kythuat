@@ -11,15 +11,19 @@ import {
   Search, 
   History,
   AlertCircle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Plus,
+  XCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function TiepNhan() {
   const { state, dispatch } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'SHOP' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN'>('SHOP');
+  const [activeTab, setActiveTab] = useState<'IMPORT' | 'SHOP' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN'>('IMPORT');
   const [searchImei, setSearchImei] = useState("");
   const [foundDevice, setFoundDevice] = useState<Device | null>(null);
+  const [imeiList, setImeiList] = useState<string[]>([]);
+  const [currentImei, setCurrentImei] = useState("");
 
   const uniqueModels: string[] = Array.from(new Set(state.products.map(p => p.model))).filter((m): m is string => !!m).sort();
 
@@ -32,6 +36,7 @@ export default function TiepNhan() {
     notes: "",
     customerInfo: "",
     customerPhone: "",
+    importPrice: 0,
   });
 
   const handleSearch = () => {
@@ -51,52 +56,87 @@ export default function TiepNhan() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const receptionType = activeTab === 'SHOP' ? 'SHOP_TRANSFER' : 
+    const receptionType = activeTab === 'IMPORT' ? 'IMPORT' :
+                         activeTab === 'SHOP' ? 'SHOP_TRANSFER' : 
                          activeTab === 'WARRANTY' ? 'WARRANTY' : 
                          activeTab === 'TRADE_IN' ? 'TRADE_IN' : 'SERVICE';
     
     const status: DeviceStatus = activeTab === 'SERVICE' ? 'CHO_PHAN_TASK' : 
-                               activeTab === 'TRADE_IN' ? 'TRADE_IN' : 'CHO_TEST';
+                                activeTab === 'TRADE_IN' ? 'TRADE_IN' : 'CHO_TEST';
 
-    const newDevice: Device = {
-      id: foundDevice?.id || `dev-${Date.now()}`,
-      imei: formData.imei || "",
-      model: formData.model || "",
-      color: formData.color || "",
-      capacity: formData.capacity || "",
-      source: activeTab === 'SHOP' ? formData.source || "" : 
-              activeTab === 'TRADE_IN' ? "Khách thu cũ (Trade-in)" : "Khách Lẻ",
-      importPrice: activeTab === 'TRADE_IN' ? Number(formData.importPrice) || 0 : foundDevice?.importPrice || 0,
-      importDate: foundDevice?.importDate || format(new Date(), "yyyy-MM-dd HH:mm"),
-      receiverId: state.currentUser!.id,
-      status,
-      notes: formData.notes || "",
-      images: foundDevice?.images || [],
-      receptionType,
-      customerInfo: formData.customerInfo,
-      customerPhone: formData.customerPhone,
-      receptionDate: format(new Date(), "yyyy-MM-dd HH:mm"),
-    };
+    const imeisToProcess = activeTab === 'IMPORT' ? imeiList : [formData.imei || ""];
 
-    if (foundDevice) {
-      dispatch({ type: "UPDATE_DEVICE", payload: newDevice });
-    } else {
-      dispatch({ type: "ADD_DEVICE", payload: newDevice });
+    if (imeisToProcess.length === 0 && activeTab === 'IMPORT') {
+      return alert("Vui lòng nhập ít nhất 1 IMEI");
     }
 
+    imeisToProcess.forEach(imei => {
+      const newDevice: Device = {
+        id: (activeTab !== 'IMPORT' && foundDevice?.id) || `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        imei: imei,
+        model: formData.model || "",
+        color: formData.color || "",
+        capacity: formData.capacity || "",
+        source: activeTab === 'IMPORT' || activeTab === 'SHOP' ? formData.source || "" : 
+                activeTab === 'TRADE_IN' ? "Khách thu cũ (Trade-in)" : "Khách Lẻ",
+        importPrice: activeTab === 'TRADE_IN' || activeTab === 'IMPORT' ? Number(formData.importPrice) || 0 : foundDevice?.importPrice || 0,
+        importDate: foundDevice?.importDate || format(new Date(), "yyyy-MM-dd HH:mm"),
+        receiverId: state.currentUser!.id,
+        status,
+        notes: formData.notes || "",
+        images: foundDevice?.images || [],
+        receptionType,
+        customerInfo: formData.customerInfo,
+        customerPhone: formData.customerPhone,
+        receptionDate: format(new Date(), "yyyy-MM-dd HH:mm"),
+      };
+
+      if (activeTab !== 'IMPORT' && foundDevice) {
+        dispatch({ type: "UPDATE_DEVICE", payload: newDevice });
+      } else {
+        dispatch({ type: "ADD_DEVICE", payload: newDevice });
+      }
+    });
+
     // Reset form
-    setFormData({ imei: "", model: "", color: "", capacity: "", source: "", notes: "", customerInfo: "", customerPhone: "" });
+    setFormData({ imei: "", model: "", color: "", capacity: "", source: "", notes: "", customerInfo: "", customerPhone: "", importPrice: 0 });
     setFoundDevice(null);
     setSearchImei("");
+    setImeiList([]);
+    setCurrentImei("");
     alert("Tiếp nhận thành công!");
+  };
+
+  const handleAddImei = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!currentImei.trim()) return;
+      if (imeiList.includes(currentImei.trim())) {
+        alert("IMEI này đã có trong danh sách");
+        return;
+      }
+      setImeiList([...imeiList, currentImei.trim()]);
+      setCurrentImei("");
+    }
+  };
+
+  const removeImei = (index: number) => {
+    setImeiList(imeiList.filter((_, i) => i !== index));
   };
 
   return (
     <div className="space-y-6 pb-20">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <h1 className="text-2xl font-bold text-neon-cyan neon-text">Tiếp Nhận Máy</h1>
+        <h1 className="text-2xl font-bold text-neon-cyan neon-text">Nhập Hàng</h1>
         <div className="bg-dark-card p-1 rounded-lg border border-dark-border w-full lg:w-auto overflow-hidden">
           <div className="tab-scroll p-1">
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center whitespace-nowrap ${activeTab === 'IMPORT' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
+              onClick={() => setActiveTab('IMPORT')}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nhập Máy Mới
+            </button>
             <button
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center whitespace-nowrap ${activeTab === 'SHOP' ? 'bg-dark-bg text-neon-cyan shadow-sm border border-neon-cyan/30' : 'text-dark-muted hover:text-dark-text'}`}
               onClick={() => setActiveTab('SHOP')}
@@ -130,7 +170,6 @@ export default function TiepNhan() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cột trái: Tìm kiếm & Thông tin máy */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-dark-card p-6 rounded-xl border border-dark-border shadow-sm">
             <h3 className="text-lg font-semibold text-dark-text mb-4 flex items-center">
@@ -163,14 +202,39 @@ export default function TiepNhan() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-dark-muted">IMEI/Serial *</label>
-                  <input
-                    type="text" required
-                    className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
-                    placeholder="Nhập IMEI hoặc Serial máy..."
-                    value={formData.imei}
-                    onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
-                  />
+                  <label className="block text-sm font-medium text-dark-muted">
+                    {activeTab === 'IMPORT' ? 'Nhập IMEI (Nhấn Enter để thêm nhiều máy)' : 'IMEI/Serial *'}
+                  </label>
+                  {activeTab === 'IMPORT' ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
+                        placeholder="Nhập IMEI và nhấn Enter..."
+                        value={currentImei}
+                        onChange={(e) => setCurrentImei(e.target.value)}
+                        onKeyDown={handleAddImei}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {imeiList.map((imei, idx) => (
+                          <span key={idx} className="flex items-center px-2 py-1 bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 rounded text-sm">
+                            {imei}
+                            <button type="button" onClick={() => removeImei(idx)} className="ml-2 text-neon-pink hover:text-neon-pink/80">
+                              <XCircle className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      type="text" required
+                      className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
+                      placeholder="Nhập IMEI hoặc Serial máy..."
+                      value={formData.imei}
+                      onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                    />
+                  )}
                 </div>
                 <div>
                   <SearchableSelect
@@ -205,9 +269,9 @@ export default function TiepNhan() {
                   </div>
                 </div>
                 
-                {activeTab === 'TRADE_IN' && (
+                {activeTab === 'TRADE_IN' || activeTab === 'IMPORT' ? (
                   <div>
-                    <label className="block text-sm font-medium text-dark-muted">Giá Thu (VNĐ) *</label>
+                    <label className="block text-sm font-medium text-dark-muted">Giá Nhập (VNĐ) *</label>
                     <input
                       type="number" required
                       className="mt-1 block w-full dark-input p-2 rounded-md text-neon-green font-bold"
@@ -215,23 +279,39 @@ export default function TiepNhan() {
                       onChange={(e) => setFormData({ ...formData, importPrice: Number(e.target.value) })}
                     />
                   </div>
-                )}
+                ) : null}
                 
-                {activeTab === 'SHOP' ? (
+                {activeTab === 'SHOP' || activeTab === 'IMPORT' ? (
                   <div>
-                    <label className="block text-sm font-medium text-dark-muted">Shop chuyển lên *</label>
-                    <select
-                      required
-                      className="mt-1 block w-full dark-input p-2 rounded-md"
-                      value={formData.source}
-                      onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    >
-                      <option value="">-- Chọn Shop --</option>
-                      <option value="XStore">XStore</option>
-                      <option value="PH_DN">PH_DN</option>
-                      <option value="PH_HUE">PH_HUE</option>
-                      <option value="PH_QNG">PH_QNG</option>
-                    </select>
+                    <label className="block text-sm font-medium text-dark-muted">
+                      {activeTab === 'IMPORT' ? 'Nhà Cung Cấp *' : 'Shop chuyển lên *'}
+                    </label>
+                    {activeTab === 'IMPORT' ? (
+                      <select
+                        required
+                        className="mt-1 block w-full dark-input p-2 rounded-md"
+                        value={formData.source}
+                        onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                      >
+                        <option value="">-- Chọn NCC --</option>
+                        {state.suppliers.map(s => (
+                          <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        required
+                        className="mt-1 block w-full dark-input p-2 rounded-md"
+                        value={formData.source}
+                        onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                      >
+                        <option value="">-- Chọn Shop --</option>
+                        <option value="XStore">XStore</option>
+                        <option value="PH_DN">PH_DN</option>
+                        <option value="PH_HUE">PH_HUE</option>
+                        <option value="PH_QNG">PH_QNG</option>
+                      </select>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -285,7 +365,6 @@ export default function TiepNhan() {
           </div>
         </div>
 
-        {/* Cột phải: Lịch sử & Ghi chú */}
         <div className="space-y-6">
           {foundDevice && (
             <div className="bg-dark-card p-6 rounded-xl border border-neon-cyan/30 shadow-[0_0_15px_rgba(0,255,255,0.1)]">
