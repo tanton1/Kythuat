@@ -23,6 +23,7 @@ import TiepNhan from "./pages/TiepNhan";
 import QuyetDinh from "./pages/QuyetDinh";
 import Login from "./pages/Login";
 import Guide from "./pages/Guide";
+import InventoryMatrix from "./pages/InventoryMatrix";
 import { useAppContext } from "./store/AppContext";
 
 function AppRoutes() {
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="qc" element={<QC />} />
         <Route path="phan-phoi" element={<PhanPhoi />} />
         <Route path="hang-hoa" element={<HangHoa />} />
+        <Route path="bao-cao-ton-kho" element={<InventoryMatrix />} />
         <Route path="nguon-hang" element={<NguonHang />} />
         <Route path="bao-cao-thu-nhap" element={<BaoCaoThuNhap />} />
         <Route path="nhan-vien" element={<NhanVien />} />

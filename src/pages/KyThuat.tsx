@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAppContext } from "../store/AppContext";
+import DateRangePicker from "../components/DateRangePicker";
+import SearchableSelect from "../components/SearchableSelect";
 import { Task, PartRequest, Incident } from "../types";
 import {
   Wrench,
@@ -18,6 +20,8 @@ export default function KyThuat() {
   const [activeTab, setActiveTab] = useState<
     "INFO" | "PARTS" | "INCIDENT" | "COMPLETE"
   >("INFO");
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   // States for forms
   const [partId, setPartId] = useState("");
@@ -26,11 +30,15 @@ export default function KyThuat() {
   const [completionNotes, setCompletionNotes] = useState("");
   const [usedParts, setUsedParts] = useState<{partId: string, quantity: number}[]>([]);
 
-  const myTasks = state.tasks.filter(
-    (t) =>
-      t.assigneeId === state.currentUser?.id &&
-      !["DONG_TASK", "HUY_TASK"].includes(t.status),
-  );
+  const myTasks = useMemo(() => {
+    return state.tasks.filter(
+      (t) =>
+        t.assigneeId === state.currentUser?.id &&
+        !["DONG_TASK", "HUY_TASK"].includes(t.status) &&
+        new Date(t.createdAt || '2000-01-01') >= new Date(startDate) &&
+        new Date(t.createdAt || '2000-01-01') <= new Date(endDate)
+    );
+  }, [state.tasks, state.currentUser?.id, startDate, endDate]);
 
   const myStock = state.technicianStocks.filter(
     (ts) => ts.technicianId === state.currentUser?.id
@@ -197,11 +205,12 @@ export default function KyThuat() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cột trái: Danh sách task của tôi */}
         <div className="bg-dark-card rounded-xl shadow-sm border border-dark-border overflow-hidden col-span-1">
-          <div className="p-4 border-b border-dark-border bg-dark-bg/50">
+          <div className="p-4 border-b border-dark-border bg-dark-bg/50 flex flex-col gap-4">
             <h3 className="text-lg font-medium text-dark-text flex items-center">
               <Wrench className="w-5 h-5 mr-2 text-neon-cyan" />
               Task Của Tôi ({myTasks.length})
             </h3>
+            <DateRangePicker startDate={startDate} endDate={endDate} onChange={(s, e) => { setStartDate(s); setEndDate(e); }} />
           </div>
           <div className="divide-y divide-dark-border max-h-[600px] overflow-y-auto">
             {myTasks.map((task) => {
@@ -385,19 +394,16 @@ export default function KyThuat() {
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="md:col-span-2">
-                          <select
+                          <SearchableSelect
+                            options={state.parts.map(p => `${p.name} (Tồn: ${p.stock})`)}
+                            value={partId ? `${state.parts.find(p => p.id === partId)?.name} (Tồn: ${state.parts.find(p => p.id === partId)?.stock})` : ""}
+                            onChange={(val) => {
+                              const selectedPart = state.parts.find(p => `${p.name} (Tồn: ${p.stock})` === val);
+                              setPartId(selectedPart ? selectedPart.id : "");
+                            }}
+                            placeholder="Chọn linh kiện..."
                             required
-                            className="block w-full rounded-md sm:text-sm p-2 dark-input"
-                            value={partId}
-                            onChange={(e) => setPartId(e.target.value)}
-                          >
-                            <option value="">-- Chọn Linh Kiện --</option>
-                            {state.parts.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name} (Tồn: {p.stock})
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
                         <div>
                           <input
@@ -730,19 +736,16 @@ export default function KyThuat() {
               <form onSubmit={handleRequestStockPart} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-dark-muted">Linh Kiện</label>
-                  <select
+                  <SearchableSelect
+                    options={state.parts.map(p => `${p.name} (Tồn: ${p.stock})`)}
+                    value={partId ? `${state.parts.find(p => p.id === partId)?.name} (Tồn: ${state.parts.find(p => p.id === partId)?.stock})` : ""}
+                    onChange={(val) => {
+                      const selectedPart = state.parts.find(p => `${p.name} (Tồn: ${p.stock})` === val);
+                      setPartId(selectedPart ? selectedPart.id : "");
+                    }}
+                    placeholder="Chọn linh kiện..."
                     required
-                    className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
-                    value={partId}
-                    onChange={(e) => setPartId(e.target.value)}
-                  >
-                    <option value="">-- Chọn Linh Kiện --</option>
-                    {state.parts.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (Tồn kho tổng: {p.stock})
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-dark-muted">Số Lượng</label>

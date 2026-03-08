@@ -19,6 +19,7 @@ import {
   UserPlus,
   HelpCircle,
   LogOut,
+  Table,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -81,6 +82,7 @@ const NAV_ITEMS = [
   { path: "/qc", label: "QC", icon: ShieldCheck, roles: ["ADMIN", "QC"] },
   { path: "/phan-phoi", label: "Phân Phối & Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"] },
   { path: "/hang-hoa", label: "Hàng Hóa", icon: Package, roles: ["ADMIN"] },
+  { path: "/bao-cao-ton-kho", label: "Báo Cáo Tồn Kho", icon: Table, roles: ["ADMIN", "KHO_MAY", "TRUONG_KT"] },
   { path: "/nguon-hang", label: "Nguồn Hàng", icon: Package, roles: ["ADMIN", "KHO_MAY"] },
   { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"] },
   { path: "/nhan-vien", label: "Nhân Viên", icon: Users, roles: ["ADMIN"] },

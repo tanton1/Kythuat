@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useAppContext } from "../store/AppContext";
+import DateRangePicker from "../components/DateRangePicker";
 import {
   Activity,
   AlertCircle,
@@ -8,14 +9,14 @@ import {
   Wrench,
   AlertTriangle,
   DollarSign,
-  Users,
   Smartphone,
   Store,
   TrendingUp,
   ArrowRightLeft,
   ShieldAlert,
   UserPlus,
-  Package
+  Package,
+  X
 } from "lucide-react";
 import {
   BarChart,
@@ -43,38 +44,54 @@ const COLORS = ['#00ffff', '#ff00ff', '#00ff00', '#ffff00', '#ff8800'];
 
 export default function Dashboard() {
   const { state } = useAppContext();
+  const [selectedReport, setSelectedReport] = useState<{title: string, devices: any[]} | null>(null);
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const totalDevices = state.devices.length;
+  const filteredDevices = useMemo(() => {
+    return state.devices.filter(d => {
+      const importDate = new Date(d.importDate || '2000-01-01');
+      return importDate >= new Date(startDate) && importDate <= new Date(endDate);
+    });
+  }, [state.devices, startDate, endDate]);
+
+  const totalDevices = filteredDevices.length;
 
   // Group 1: Máy Đang Xử Lý (Tại Kho Tổng/Kỹ Thuật)
-  const pendingTest = state.devices.filter((d) => 
+  const pendingTestDevices = filteredDevices.filter((d) => 
     ["MOI_NHAP", "CHO_TEST", "DA_TEST"].includes(d.status)
-  ).length;
+  );
+  const pendingTest = pendingTestDevices.length;
   
-  const inTechnical = state.devices.filter((d) => 
+  const inTechnicalDevices = filteredDevices.filter((d) => 
     ["CHO_PHAN_TASK", "DANG_XU_LY", "CHO_LINH_KIEN", "CHO_QC", "CHO_QUYET_DINH", "BAO_HANH"].includes(d.status)
-  ).length;
+  );
+  const inTechnical = inTechnicalDevices.length;
   
-  const inMainStock = state.devices.filter((d) => 
+  const inMainStockDevices = filteredDevices.filter((d) => 
     ["CHO_BAN", "TRADE_IN", "MAY_XAC"].includes(d.status) && (!d.location || d.location === "KHO_TONG")
-  ).length;
+  );
+  const inMainStock = inMainStockDevices.length;
   
   // Group 2: Máy Đã Xuất Kho / Hoàn Tất
-  const atShops = state.devices.filter((d) => 
+  const atShopsDevices = filteredDevices.filter((d) => 
     d.status === "CHO_BAN" && d.location && d.location !== "KHO_TONG" && d.location !== "DA_BAN"
-  ).length;
+  );
+  const atShops = atShopsDevices.length;
   
-  const sold = state.devices.filter((d) => d.status === "DA_BAN" || d.location === "DA_BAN").length;
+  const soldDevices = filteredDevices.filter((d) => d.status === "DA_BAN" || d.location === "DA_BAN");
+  const sold = soldDevices.length;
   
-  const finished = state.devices.filter((d) => 
+  const finishedDevices = filteredDevices.filter((d) => 
     d.status === "HOAN_TAT" || d.status === "DA_TRA_NCC" || d.status === "CHO_TRA_NCC"
-  ).length;
+  );
+  const finished = finishedDevices.length;
 
   const totalActive = pendingTest + inTechnical + inMainStock;
   const totalCompleted = atShops + sold + finished;
 
   // 1. Biểu đồ số lượng máy kỹ thuật đang xử lý theo nguồn
-  const devicesInProgress = state.devices.filter(d => 
+  const devicesInProgress = filteredDevices.filter(d => 
     ["DANG_XU_LY", "CHO_LINH_KIEN", "CHO_QC", "CHO_PHAN_TASK", "BAO_HANH", "CHO_TEST"].includes(d.status)
   );
   
@@ -109,11 +126,11 @@ export default function Dashboard() {
       if (!t.deadline) return false;
       return new Date(t.deadline) < now;
     }).map(t => {
-      const device = state.devices.find(d => d.id === t.deviceId);
+      const device = filteredDevices.find(d => d.id === t.deviceId);
       const assignee = state.users.find(u => u.id === t.assigneeId);
       return { ...t, device, assignee };
-    });
-  }, [state.tasks, state.devices, state.users]);
+    }).filter(t => t.device);
+  }, [state.tasks, filteredDevices, state.users]);
 
   // 3. Hoa hồng team kỹ thuật
   const commissionData = useMemo(() => {
@@ -160,6 +177,8 @@ export default function Dashboard() {
             icon={Smartphone} 
             color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" 
             subtitle="Mới nhập, Chờ test, Đã test"
+            onSelect={() => setSelectedReport({title: "Nhập Hàng & Test", devices: pendingTestDevices})}
+            isSelected={selectedReport?.title === "Nhập Hàng & Test"}
           />
           <StatCard 
             title="Đang Xử Lý KT" 
@@ -167,6 +186,8 @@ export default function Dashboard() {
             icon={Wrench} 
             color="bg-neon-pink/10 text-neon-pink border border-neon-pink/30" 
             subtitle="Sửa chữa, Chờ linh kiện, QC"
+            onSelect={() => setSelectedReport({title: "Đang Xử Lý KT", devices: inTechnicalDevices})}
+            isSelected={selectedReport?.title === "Đang Xử Lý KT"}
           />
           <StatCard 
             title="Tồn Kho Tổng" 
@@ -174,6 +195,8 @@ export default function Dashboard() {
             icon={CheckCircle} 
             color="bg-neon-green/10 text-neon-green border border-neon-green/30" 
             subtitle="Chờ bán, Trade-in, Máy xác"
+            onSelect={() => setSelectedReport({title: "Tồn Kho Tổng", devices: inMainStockDevices})}
+            isSelected={selectedReport?.title === "Tồn Kho Tổng"}
           />
         </div>
       </section>
@@ -194,6 +217,8 @@ export default function Dashboard() {
             icon={Store} 
             color="bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" 
             subtitle="Máy đang trưng bày tại các Shop"
+            onSelect={() => setSelectedReport({title: "Đã Chuyển Shop", devices: atShopsDevices})}
+            isSelected={selectedReport?.title === "Đã Chuyển Shop"}
           />
           <StatCard 
             title="Đã Xuất Bán" 
@@ -201,6 +226,8 @@ export default function Dashboard() {
             icon={DollarSign} 
             color="bg-neon-green/10 text-neon-green border border-neon-green/30" 
             subtitle="Đã bán cho khách/shop"
+            onSelect={() => setSelectedReport({title: "Đã Xuất Bán", devices: soldDevices})}
+            isSelected={selectedReport?.title === "Đã Xuất Bán"}
           />
           <StatCard 
             title="Hoàn Tất / Trả NCC" 
@@ -208,9 +235,50 @@ export default function Dashboard() {
             icon={AlertCircle} 
             color="bg-dark-border text-dark-muted border border-dark-border" 
             subtitle="Sửa lẻ xong, Trả bảo hành, Trả NCC"
+            onSelect={() => setSelectedReport({title: "Hoàn Tất / Trả NCC", devices: finishedDevices})}
+            isSelected={selectedReport?.title === "Hoàn Tất / Trả NCC"}
           />
         </div>
       </section>
+
+      {/* Detailed View Section */}
+      {selectedReport && (
+        <section className="bg-dark-card rounded-xl border border-dark-border p-6 mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-neon-cyan">Chi tiết: {selectedReport.title} ({selectedReport.devices.length})</h3>
+            <button onClick={() => setSelectedReport(null)} className="text-dark-muted hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-dark-text">
+              <thead className="text-xs text-dark-muted uppercase bg-dark-bg">
+                <tr>
+                  <th className="px-4 py-3">Model</th>
+                  <th className="px-4 py-3">IMEI</th>
+                  <th className="px-4 py-3">Trạng thái</th>
+                  <th className="px-4 py-3">Người xử lý / Vị trí</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedReport.devices.map((device: any) => {
+                  const activeTask = state.tasks.find(t => t.deviceId === device.id && !['DONG_TASK', 'HUY_TASK'].includes(t.status));
+                  const assignee = activeTask ? state.users.find(u => u.id === activeTask.assigneeId) : null;
+                  const location = assignee ? assignee.name : (device.location || 'KHO_TONG');
+                  return (
+                    <tr key={device.id} className="border-b border-dark-border hover:bg-dark-bg/50">
+                      <td className="px-4 py-3 font-medium">{device.model}</td>
+                      <td className="px-4 py-3 font-mono text-neon-cyan">{device.imei}</td>
+                      <td className="px-4 py-3">{device.status}</td>
+                      <td className="px-4 py-3">{location}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Báo cáo 3: Báo Cáo Tồn Kho Theo Nguồn Gốc */}
       <section className="space-y-4">
@@ -223,10 +291,11 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {Object.entries(RECEPTION_TYPE_MAP).map(([key, label]) => {
-            const count = state.devices.filter(d => 
+            const devices = filteredDevices.filter(d => 
               d.receptionType === key && 
               !["DA_BAN", "HOAN_TAT", "DA_TRA_NCC"].includes(d.status)
-            ).length;
+            );
+            const count = devices.length;
             
             let icon = Smartphone;
             let color = "bg-dark-bg text-dark-muted border border-dark-border";
@@ -238,7 +307,11 @@ export default function Dashboard() {
             if (key === 'SHOP_TRANSFER') { icon = Store; color = "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30"; }
 
             return (
-              <div key={key} className="bg-dark-card p-4 rounded-xl border border-dark-border hover:border-neon-cyan/50 transition-colors cursor-pointer group">
+              <div 
+                key={key} 
+                className={`bg-dark-card p-4 rounded-xl border border-dark-border hover:border-neon-cyan/50 transition-colors cursor-pointer group ${selectedReport?.title === label ? 'border-neon-cyan' : ''}`}
+                onClick={() => setSelectedReport({title: label, devices})}
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div className={`p-2 rounded-lg ${color}`}>
                     {React.createElement(icon, { className: "w-4 h-4" })}
@@ -372,11 +445,11 @@ export default function Dashboard() {
             <Activity className="w-5 h-5 mr-2 text-neon-cyan" />
             Máy Mới Tiếp Nhận
           </h2>
-          {state.devices.length === 0 ? (
+          {filteredDevices.length === 0 ? (
             <p className="text-dark-muted text-sm text-center py-8">Chưa có dữ liệu máy.</p>
           ) : (
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-              {state.devices
+              {filteredDevices
                 .slice(-8)
                 .reverse()
                 .map((device) => (
@@ -410,9 +483,12 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, subtitle }: any) {
+function StatCard({ title, value, icon: Icon, color, subtitle, onSelect, isSelected }: any) {
   return (
-    <div className="bg-dark-card rounded-xl shadow-sm border border-dark-border p-3 sm:p-6 flex items-center">
+    <div 
+      onClick={onSelect}
+      className={`bg-dark-card rounded-xl shadow-sm border p-3 sm:p-6 flex items-center cursor-pointer transition-colors ${isSelected ? 'border-neon-cyan bg-neon-cyan/5' : 'border-dark-border hover:border-neon-cyan/50'}`}
+    >
       <div className={`p-2 sm:p-3 rounded-lg ${color}`}>
         <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
       </div>
