@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../store/AppContext';
 import { Device, DeviceLocation } from '../types';
 import { Store, Truck, ShoppingCart, Search, CheckCircle } from 'lucide-react';
@@ -15,6 +16,7 @@ const SHOP_LABELS: Record<string, string> = {
 
 export default function PhanPhoi() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'KHO_TONG' | 'SHOPS' | 'SERVICE_RETURN' | 'WARRANTY_RETURN' | 'HISTORY'>('KHO_TONG');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [transferShop, setTransferShop] = useState<DeviceLocation>('XSTORE');
@@ -198,7 +200,7 @@ export default function PhanPhoi() {
               >
                 <div>
                   <p className="font-medium text-dark-text">{device.model} ({device.capacity})</p>
-                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: {device.imei}</p>
+                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button></p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-dark-text">{device.color}</p>
@@ -215,7 +217,7 @@ export default function PhanPhoi() {
               >
                 <div>
                   <p className="font-medium text-dark-text">{device.model} ({device.capacity})</p>
-                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: {device.imei}</p>
+                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button></p>
                 </div>
                 <div className="text-right">
                   <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
@@ -233,7 +235,7 @@ export default function PhanPhoi() {
               >
                 <div>
                   <p className="font-medium text-dark-text">{device.model} ({device.capacity})</p>
-                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: {device.imei}</p>
+                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button></p>
                   <p className="text-xs text-neon-cyan mt-1">KH: {device.customerInfo || '---'}</p>
                 </div>
                 <div className="text-right">
@@ -252,7 +254,7 @@ export default function PhanPhoi() {
               >
                 <div>
                   <p className="font-medium text-dark-text">{device.model} ({device.capacity})</p>
-                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: {device.imei}</p>
+                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button></p>
                   <p className="text-xs text-neon-pink mt-1">KH: {device.customerInfo || '---'}</p>
                 </div>
                 <div className="text-right">
@@ -267,7 +269,7 @@ export default function PhanPhoi() {
               <div key={device.id} className="p-4 bg-dark-bg flex justify-between items-center">
                 <div>
                   <p className="font-medium text-dark-text">{device.model}</p>
-                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: {device.imei}</p>
+                  <p className="text-xs text-dark-muted font-mono mt-1">IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button></p>
                   <p className="text-xs text-dark-muted/70 mt-1">KH: {device.customerInfo}</p>
                 </div>
                 <div className="text-right">

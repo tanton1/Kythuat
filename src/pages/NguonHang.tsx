@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device } from "../types";
 import { Search, Smartphone, Package, ArrowRightLeft, ShieldAlert, UserPlus, Store, Settings } from "lucide-react";
@@ -13,6 +14,7 @@ const RECEPTION_TYPE_MAP: Record<string, { label: string, icon: any, color: stri
 
 export default function NguonHang() {
   const { state } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('IMPORT');
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<'ALL' | 'TODAY' | 'WEEK' | 'MONTH' | 'LAST_MONTH' | 'CUSTOM'>('ALL');
@@ -312,10 +314,13 @@ export default function NguonHang() {
                   <tr key={device.id}>
                     {visibleColumns.imei && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-dark-text">
-                        <div className="flex items-center">
-                          <Smartphone className="w-4 h-4 mr-2 text-neon-cyan" />
-                          {device.imei}
-                        </div>
+                        <button 
+                          onClick={() => navigate(`/thiet-bi/${device.imei}`)}
+                          className="flex items-center hover:text-neon-cyan transition-colors group"
+                        >
+                          <Smartphone className="w-4 h-4 mr-2 text-neon-cyan group-hover:scale-110 transition-transform" />
+                          <span className="border-b border-transparent group-hover:border-neon-cyan">{device.imei}</span>
+                        </button>
                       </td>
                     )}
                     {visibleColumns.model && (

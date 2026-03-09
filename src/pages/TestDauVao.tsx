@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device } from "../types";
 import {
@@ -8,7 +9,6 @@ import {
   HelpCircle,
   XCircle,
 } from "lucide-react";
-import { DeviceHistoryModal } from "../components/DeviceHistoryModal";
 
 const CHECKLIST_ITEMS = [
   { id: "power", label: "Lên nguồn" },
@@ -28,6 +28,7 @@ const CHECKLIST_ITEMS = [
 
 export default function TestDauVao() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'TESTING' | 'HISTORY'>('TESTING');
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<'ALL' | 'WEEK' | 'MONTH' | 'LAST_MONTH' | 'CUSTOM'>('ALL');
@@ -101,6 +102,9 @@ export default function TestDauVao() {
   const handleSubmit = () => {
     if (!selectedDevice) return;
     console.log("Submitting test results:", testResults);
+
+    // In a real app, we would save the test report to the database.
+    // Here we just update the device status.
 
     const updatedDevice = {
       ...selectedDevice,
@@ -202,16 +206,20 @@ export default function TestDauVao() {
               </thead>
               <tbody className="divide-y divide-dark-border">
                 {historicalDevices.map((device) => (
-                  <tr key={device.id} className="hover:bg-dark-bg/50 cursor-pointer" onClick={() => setSelectedHistoryDevice(device)}>
-                    <td className="px-4 py-3">{device.receptionDate}</td>
-                    <td className="px-4 py-3 font-mono">{device.imei}</td>
-                    <td className="px-4 py-3">{device.model}</td>
-                    <td className="px-4 py-3">
+                  <tr key={device.id} className="hover:bg-dark-bg/50 cursor-pointer">
+                    <td className="px-4 py-3" onClick={() => setSelectedHistoryDevice(device)}>{device.receptionDate}</td>
+                    <td className="px-4 py-3 font-mono">
+                      <button onClick={() => navigate(`/thiet-bi/${device.imei}`)} className="text-neon-cyan hover:underline">
+                        {device.imei}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3" onClick={() => setSelectedHistoryDevice(device)}>{device.model}</td>
+                    <td className="px-4 py-3" onClick={() => setSelectedHistoryDevice(device)}>
                       <span className="px-2 py-1 bg-dark-border rounded-full text-xs text-dark-text">
                         {device.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-neon-cyan hover:underline">Xem chi tiết</td>
+                    <td className="px-4 py-3 text-neon-cyan hover:underline" onClick={() => setSelectedHistoryDevice(device)}>Xem chi tiết</td>
                   </tr>
                 ))}
               </tbody>
@@ -219,14 +227,70 @@ export default function TestDauVao() {
           </div>
 
           {selectedHistoryDevice && (
-            <DeviceHistoryModal
-              device={selectedHistoryDevice}
-              tasks={state.tasks}
-              incidents={state.incidents}
-              qcReports={state.qcReports}
-              parts={state.parts}
-              onClose={() => setSelectedHistoryDevice(null)}
-            />
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+              {console.log("Selected History Device:", selectedHistoryDevice)}
+              <div className="bg-dark-card rounded-xl border border-dark-border w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-dark-text">Chi tiết máy: {selectedHistoryDevice.model}</h2>
+                  <button onClick={() => setSelectedHistoryDevice(null)} className="text-dark-muted hover:text-neon-pink"><XCircle /></button>
+                </div>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-dark-muted mb-1">IMEI</p>
+                      <p className="font-mono text-dark-text">{selectedHistoryDevice.imei}</p>
+                    </div>
+                    <div>
+                      <p className="text-dark-muted mb-1">Trạng thái</p>
+                      <p className="font-medium text-neon-cyan">{selectedHistoryDevice.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-dark-muted mb-1">Ngoại hình</p>
+                      <p className="font-medium text-dark-text">{selectedHistoryDevice.appearance || 'Không rõ'}</p>
+                    </div>
+                    <div>
+                      <p className="text-dark-muted mb-1">Nguồn gốc</p>
+                      <p className="font-medium text-dark-text">{selectedHistoryDevice.source}</p>
+                    </div>
+                  </div>
+
+                  {selectedHistoryDevice.testResults && (
+                    <div>
+                      <h3 className="text-sm font-medium text-neon-cyan mb-3 border-b border-dark-border pb-2">Kết quả Test</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {CHECKLIST_ITEMS.map(item => {
+                          const result = selectedHistoryDevice.testResults?.[item.id] || 'UNTESTED';
+                          return (
+                            <div key={item.id} className="flex justify-between items-center bg-dark-bg p-2 rounded border border-dark-border">
+                              <span className="text-sm text-dark-text">{item.label}</span>
+                              {result === 'OK' && <span className="text-xs font-bold text-neon-green px-2 py-1 bg-neon-green/10 rounded flex items-center"><CheckCircle className="w-3 h-3 mr-1"/> OK</span>}
+                              {result === 'FAIL' && <span className="text-xs font-bold text-neon-pink px-2 py-1 bg-neon-pink/10 rounded flex items-center"><AlertCircle className="w-3 h-3 mr-1"/> Lỗi</span>}
+                              {result === 'UNTESTED' && <span className="text-xs font-bold text-gray-400 px-2 py-1 bg-gray-500/10 rounded flex items-center"><HelpCircle className="w-3 h-3 mr-1"/> Chưa test</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-sm font-medium text-neon-cyan mb-2 border-b border-dark-border pb-2">Ghi chú</h3>
+                    <div className="bg-dark-bg p-3 rounded border border-dark-border text-sm text-dark-text whitespace-pre-wrap">
+                      {selectedHistoryDevice.notes || 'Không có ghi chú'}
+                    </div>
+                  </div>
+
+                  {selectedHistoryDevice.images && selectedHistoryDevice.images.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-neon-cyan mb-2 border-b border-dark-border pb-2">Ảnh tình trạng</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedHistoryDevice.images.map((img, idx) => <img key={idx} src={img} className="w-24 h-24 object-cover rounded border border-dark-border" />)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       ) : (
@@ -249,7 +313,7 @@ export default function TestDauVao() {
                     <div>
                       <p className="font-medium text-dark-text">{device.model}</p>
                       <p className="text-xs text-dark-muted font-mono mt-1">
-                        IMEI: {device.imei}
+                        IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button>
                       </p>
                     </div>
                     <div className="flex flex-col items-end">
@@ -290,7 +354,7 @@ export default function TestDauVao() {
                     Biên Bản Test: {selectedDevice.model}
                   </h3>
                   <p className="text-sm text-dark-muted font-mono">
-                    IMEI: {selectedDevice.imei}
+                    IMEI: <button onClick={() => navigate(`/thiet-bi/${selectedDevice.imei}`)} className="text-neon-cyan hover:underline">{selectedDevice.imei}</button>
                   </p>
                 </div>
                 <button

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAppContext } from "../store/AppContext";
-import { DollarSign, TrendingUp, CheckCircle2, AlertCircle, Calendar } from "lucide-react";
-import { format, startOfMonth, endOfMonth, isWithinInterval, parse } from "date-fns";
+import { DollarSign, TrendingUp, CheckCircle2, AlertCircle, Calendar, Filter } from "lucide-react";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parse, subMonths, startOfDay, endOfDay } from "date-fns";
 
 export default function BaoCaoThuNhap() {
   const { state } = useAppContext();
@@ -9,58 +9,79 @@ export default function BaoCaoThuNhap() {
     start: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     end: format(endOfMonth(new Date()), "yyyy-MM-dd"),
   });
+  const [selectedTechId, setSelectedTechId] = useState<string>("ALL");
 
   const isTechnician = state.currentUser?.role === "KY_THUAT";
-  const targetTechId = isTechnician ? state.currentUser?.id : null;
+  
+  // Filter logic
+  const filteredTasks = useMemo(() => {
+    return state.tasks.filter(task => {
+      const isTargetTech = isTechnician 
+        ? task.assigneeId === state.currentUser?.id 
+        : (selectedTechId === "ALL" ? true : task.assigneeId === selectedTechId);
+      
+      if (!isTargetTech || !task.commission) return false;
 
-  // Filter tasks that have commission and are completed (passed QC)
-  const completedTasks = state.tasks.filter(task => {
-    const isCompleted = task.status === "DONG_TASK";
-    const isTargetTech = targetTechId ? task.assigneeId === targetTechId : true;
-    
-    if (!isCompleted || !isTargetTech || !task.commission) return false;
+      try {
+        const taskDate = parse(task.createdAt.split(" ")[0], "yyyy-MM-dd", new Date());
+        return isWithinInterval(taskDate, {
+          start: parse(dateRange.start, "yyyy-MM-dd", new Date()),
+          end: parse(dateRange.end, "yyyy-MM-dd", new Date()),
+        });
+      } catch (e) {
+        return false;
+      }
+    });
+  }, [state.tasks, dateRange, selectedTechId, isTechnician, state.currentUser?.id]);
 
-    try {
-      const taskDate = parse(task.createdAt.split(" ")[0], "yyyy-MM-dd", new Date());
-      return isWithinInterval(taskDate, {
-        start: parse(dateRange.start, "yyyy-MM-dd", new Date()),
-        end: parse(dateRange.end, "yyyy-MM-dd", new Date()),
-      });
-    } catch (e) {
-      return false;
-    }
-  });
+  const completedTasks = filteredTasks.filter(t => t.status === "DONG_TASK");
+  const pendingTasks = filteredTasks.filter(t => t.status !== "DONG_TASK" && t.status !== "HUY_TASK");
 
   const totalCommission = completedTasks.reduce((sum, t) => sum + (t.commission || 0), 0);
-  const pendingTasks = state.tasks.filter(t => 
-    t.status !== "DONG_TASK" && 
-    t.status !== "HUY_TASK" && 
-    (targetTechId ? t.assigneeId === targetTechId : true)
-  );
   const potentialCommission = pendingTasks.reduce((sum, t) => sum + (t.commission || 0), 0);
+
+  const setPresetRange = (preset: 'THIS_MONTH' | 'LAST_MONTH' | 'ALL') => {
+    const now = new Date();
+    if (preset === 'THIS_MONTH') {
+      setDateRange({ start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") });
+    } else if (preset === 'LAST_MONTH') {
+      const lastMonth = subMonths(now, 1);
+      setDateRange({ start: format(startOfMonth(lastMonth), "yyyy-MM-dd"), end: format(endOfMonth(lastMonth), "yyyy-MM-dd") });
+    } else {
+      setDateRange({ start: '2000-01-01', end: format(new Date(), "yyyy-MM-dd") });
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-2xl font-bold text-neon-cyan neon-text flex items-center">
           <DollarSign className="w-6 h-6 mr-2" />
-          Báo Cáo Thu Nhập {isTechnician ? "" : "Kỹ Thuật"}
+          Báo Cáo Hoa Hồng Kỹ Thuật
         </h1>
-        <div className="flex items-center space-x-2 bg-dark-card p-2 rounded-lg border border-dark-border">
-          <Calendar className="w-4 h-4 text-dark-muted" />
-          <input 
-            type="date" 
-            className="bg-transparent text-xs text-dark-text focus:outline-none"
-            value={dateRange.start}
-            onChange={e => setDateRange({...dateRange, start: e.target.value})}
-          />
-          <span className="text-dark-muted">-</span>
-          <input 
-            type="date" 
-            className="bg-transparent text-xs text-dark-text focus:outline-none"
-            value={dateRange.end}
-            onChange={e => setDateRange({...dateRange, end: e.target.value})}
-          />
+        
+        <div className="flex flex-wrap items-center gap-2 bg-dark-card p-2 rounded-lg border border-dark-border">
+          {!isTechnician && (
+            <select 
+              className="bg-transparent text-xs text-dark-text focus:outline-none border-r border-dark-border pr-2"
+              value={selectedTechId}
+              onChange={e => setSelectedTechId(e.target.value)}
+            >
+              <option value="ALL">Tất cả KTV</option>
+              {state.users.filter(u => u.role === "KY_THUAT").map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          )}
+          <button onClick={() => setPresetRange('THIS_MONTH')} className="text-xs text-dark-muted hover:text-neon-cyan">Tháng này</button>
+          <button onClick={() => setPresetRange('LAST_MONTH')} className="text-xs text-dark-muted hover:text-neon-cyan">Tháng trước</button>
+          <button onClick={() => setPresetRange('ALL')} className="text-xs text-dark-muted hover:text-neon-cyan">Tất cả</button>
+          <div className="flex items-center space-x-1 border-l border-dark-border pl-2">
+            <Calendar className="w-4 h-4 text-dark-muted" />
+            <input type="date" className="bg-transparent text-xs text-dark-text focus:outline-none" value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} />
+            <span className="text-dark-muted">-</span>
+            <input type="date" className="bg-transparent text-xs text-dark-text focus:outline-none" value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} />
+          </div>
         </div>
       </div>
 

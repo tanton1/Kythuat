@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import DateRangePicker from "../components/DateRangePicker";
 import {
@@ -44,6 +45,7 @@ const COLORS = ['#00ffff', '#ff00ff', '#00ff00', '#ffff00', '#ff8800'];
 
 export default function Dashboard() {
   const { state } = useAppContext();
+  const navigate = useNavigate();
   const [selectedReport, setSelectedReport] = useState<{title: string, devices: any[]} | null>(null);
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
@@ -268,7 +270,11 @@ export default function Dashboard() {
                   return (
                     <tr key={device.id} className="border-b border-dark-border hover:bg-dark-bg/50">
                       <td className="px-4 py-3 font-medium">{device.model}</td>
-                      <td className="px-4 py-3 font-mono text-neon-cyan">{device.imei}</td>
+                      <td className="px-4 py-3 font-mono text-neon-cyan">
+                        <button onClick={() => navigate(`/thiet-bi/${device.imei}`)} className="hover:underline">
+                          {device.imei}
+                        </button>
+                      </td>
                       <td className="px-4 py-3">{device.status}</td>
                       <td className="px-4 py-3">{location}</td>
                     </tr>
@@ -420,7 +426,7 @@ export default function Dashboard() {
                 <div key={task.id} className="p-3 bg-dark-bg border border-neon-pink/30 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
                     <p className="font-medium text-dark-text">
-                      {task.device?.model} - {task.device?.imei}
+                      {task.device?.model} - <button onClick={() => navigate(`/thiet-bi/${task.device?.imei}`)} className="text-neon-cyan hover:underline">{task.device?.imei}</button>
                     </p>
                     <span className="text-xs font-medium bg-neon-pink/10 text-neon-pink px-2 py-1 rounded">
                       {new Date(task.deadline).toLocaleString('vi-VN')}
@@ -462,7 +468,7 @@ export default function Dashboard() {
                         {device.model}
                       </p>
                       <p className="text-xs text-dark-muted mt-1">
-                        IMEI: {device.imei}
+                        IMEI: <button onClick={() => navigate(`/thiet-bi/${device.imei}`)} className="text-neon-cyan hover:underline">{device.imei}</button>
                       </p>
                     </div>
                     <div className="text-right">

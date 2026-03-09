@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Part, PartRequest, Supplier } from "../types";
 import { Package, CheckCircle, XCircle, Search, Plus, Save } from "lucide-react";
@@ -6,6 +7,7 @@ import { format } from "date-fns";
 
 export default function KhoLinhKien() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"REQUESTS" | "INVENTORY">(
     "REQUESTS",
   );
@@ -267,7 +269,7 @@ export default function KhoLinhKien() {
                               {device.model}
                             </p>
                             <p className="text-xs text-dark-muted">
-                              IMEI: {device.imei.slice(-4)}
+                              IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei.slice(-4)}</button>
                             </p>
                           </>
                         ) : (

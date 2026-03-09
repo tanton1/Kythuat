@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device, Task, QCReport } from "../types";
 import { ShieldCheck, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
@@ -6,6 +7,7 @@ import { format } from "date-fns";
 
 export default function QC() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [qcNotes, setQcNotes] = useState("");
 
@@ -168,7 +170,7 @@ export default function QC() {
                         {device.model}
                       </p>
                       <p className="text-xs text-dark-muted font-mono mt-1">
-                        IMEI: {device.imei.slice(-4)}
+                        IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei.slice(-4)}</button>
                       </p>
                     </div>
                     <span className="px-2 py-1 text-[10px] font-semibold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
@@ -198,7 +200,7 @@ export default function QC() {
                   Biên Bản QC: {selectedDevice.model}
                 </h2>
                 <p className="text-sm text-dark-muted font-mono mt-1">
-                  IMEI: {selectedDevice.imei}
+                  IMEI: <button onClick={() => navigate(`/thiet-bi/${selectedDevice.imei}`)} className="text-neon-cyan hover:underline">{selectedDevice.imei}</button>
                 </p>
               </div>
 

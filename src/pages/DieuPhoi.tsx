@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device, Task } from "../types";
 import { Settings, UserPlus, Clock, AlertTriangle } from "lucide-react";
@@ -6,6 +7,7 @@ import { format } from "date-fns";
 
 export default function DieuPhoi() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [newTask, setNewTask] = useState<Partial<Task>>({
     type: "Thay Pin",
@@ -177,7 +179,7 @@ export default function DieuPhoi() {
                 >
                   <p className="font-medium text-dark-text">{device.model}</p>
                   <p className="text-xs text-dark-muted font-mono mt-1">
-                    IMEI: {device.imei}
+                    IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button>
                   </p>
                   <p className="text-xs text-neon-pink mt-2 line-clamp-2">
                     Lỗi: {device.notes.split("[TEST ĐẦU VÀO]:")[1] || "Chưa rõ"}
@@ -254,7 +256,7 @@ export default function DieuPhoi() {
                     {selectedDevice.model}
                   </p>
                   <p className="text-sm text-dark-muted font-mono">
-                    IMEI: {selectedDevice.imei}
+                    IMEI: <button onClick={() => navigate(`/thiet-bi/${selectedDevice.imei}`)} className="text-neon-cyan hover:underline">{selectedDevice.imei}</button>
                   </p>
                   <div className="mt-3 text-sm text-yellow-500 bg-yellow-500/10 p-3 rounded border border-yellow-500/30">
                     <strong>Ghi chú test đầu vào:</strong>

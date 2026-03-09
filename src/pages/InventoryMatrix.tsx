@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { DeviceLocation } from "../types";
 import { Table, LayoutDashboard, Smartphone, MapPin, User } from "lucide-react";
@@ -13,6 +14,7 @@ const APPEARANCE_LABELS: Record<string, string> = {
 
 export default function InventoryMatrix() {
   const { state } = useAppContext();
+  const navigate = useNavigate();
 
   // Filter devices: only KHO_TONG and specific sources
   const activeDevices = useMemo(() => {
@@ -181,9 +183,13 @@ export default function InventoryMatrix() {
                               <div className="space-y-1">
                                 <div className="flex flex-col gap-1">
                                   {imeis.map(imei => (
-                                    <span key={imei} className="text-[12px] font-bold text-neon-cyan font-mono bg-dark-bg px-2 py-1 rounded border border-neon-cyan/30 hover:border-neon-cyan/80 hover:text-white transition-colors shadow-sm">
+                                    <button 
+                                      key={imei} 
+                                      onClick={() => navigate(`/thiet-bi/${imei}`)}
+                                      className="text-[12px] font-bold text-neon-cyan font-mono bg-dark-bg px-2 py-1 rounded border border-neon-cyan/30 hover:border-neon-cyan/80 hover:text-white transition-colors shadow-sm text-left"
+                                    >
                                       {imei}
-                                    </span>
+                                    </button>
                                   ))}
                                 </div>
                               </div>

@@ -25,6 +25,7 @@ import {
   FileText,
   Activity,
   BookOpen,
+  AlertTriangle,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -67,6 +68,7 @@ const NAV_GROUPS = [
       { path: "/phan-phoi", label: "Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"] },
       { path: "/bao-cao-ton-kho", label: "Báo Cáo Tồn Kho", icon: Table, roles: ["ADMIN", "KHO_MAY", "TRUONG_KT"] },
       { path: "/nguon-hang", label: "Báo Cáo Theo Nguồn", icon: Truck, roles: ["ADMIN", "KHO_MAY"] },
+      { path: "/bao-cao-ty-le-loi", label: "Báo Cáo Tỷ Lệ Lỗi", icon: AlertTriangle, roles: ["ADMIN", "TRUONG_KT", "QC"] },
       { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"] },
     ]
   },

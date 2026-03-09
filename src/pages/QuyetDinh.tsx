@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device } from "../types";
 import { 
@@ -14,6 +15,7 @@ import { format } from "date-fns";
 
 export default function QuyetDinh() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [decisionNotes, setDecisionNotes] = useState("");
 
@@ -95,7 +97,7 @@ export default function QuyetDinh() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium text-dark-text">{device.model}</p>
-                    <p className="text-xs text-dark-muted font-mono mt-1">IMEI: {device.imei}</p>
+                    <p className="text-xs text-dark-muted font-mono mt-1">IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button></p>
                   </div>
                   <span className="px-2 py-1 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
                     Chờ QĐ
@@ -123,7 +125,7 @@ export default function QuyetDinh() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-xl font-bold text-dark-text">{selectedDevice.model}</h2>
-                    <p className="text-sm text-dark-muted font-mono">{selectedDevice.imei}</p>
+                    <p className="text-sm text-dark-muted font-mono">IMEI: <button onClick={() => navigate(`/thiet-bi/${selectedDevice.imei}`)} className="text-neon-cyan hover:underline">{selectedDevice.imei}</button></p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-dark-muted">Nguồn: {selectedDevice.source}</p>

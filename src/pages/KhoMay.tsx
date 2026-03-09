@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device, DeviceStatus, Supplier } from "../types";
 import { Plus, Search, Smartphone, Settings2, XCircle, History, User, Clock, ArrowRightLeft, Info, ChevronRight } from "lucide-react";
@@ -7,6 +8,7 @@ import { format } from "date-fns";
 
 export default function KhoMay() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [selectedDeviceForHistory, setSelectedDeviceForHistory] = useState<Device | null>(null);
   const [selectedTechId, setSelectedTechId] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -345,7 +347,7 @@ export default function KhoMay() {
                     {visibleColumns.imei && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-dark-text">
                         <button 
-                          onClick={() => setSelectedDeviceForHistory(device)}
+                          onClick={() => navigate(`/thiet-bi/${device.imei}`)}
                           className="flex items-center hover:text-neon-cyan transition-colors group"
                         >
                           <Smartphone className="w-4 h-4 mr-2 text-neon-cyan group-hover:scale-110 transition-transform" />
@@ -521,171 +523,7 @@ export default function KhoMay() {
           </div>
         </div>
       )}
-      {/* Modal Lịch Sử Máy */}
-      {selectedDeviceForHistory && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
-          <div className="bg-dark-card rounded-2xl shadow-2xl border border-dark-border w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-dark-border bg-dark-bg/50 flex justify-between items-center">
-              <div className="flex items-center">
-                <div className="w-12 h-12 rounded-xl bg-neon-cyan/10 flex items-center justify-center mr-4 border border-neon-cyan/20">
-                  <History className="w-6 h-6 text-neon-cyan" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-dark-text">Truy Xuất Lịch Sử Thiết Bị</h3>
-                  <p className="text-sm text-dark-muted font-mono">IMEI: {selectedDeviceForHistory.imei}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setSelectedDeviceForHistory(null)}
-                className="p-2 text-dark-muted hover:text-neon-pink transition-colors"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
-              {/* Thông tin cơ bản */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-dark-bg p-4 rounded-xl border border-dark-border">
-                  <p className="text-xs font-bold text-dark-muted uppercase mb-3 flex items-center">
-                    <Smartphone className="w-3 h-3 mr-1" /> Thông tin máy
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-dark-muted">Model:</span> <span className="text-dark-text font-medium">{selectedDeviceForHistory.model}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">Màu sắc:</span> <span className="text-dark-text">{selectedDeviceForHistory.color}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">Dung lượng:</span> <span className="text-dark-text">{selectedDeviceForHistory.capacity}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">Ngoại hình:</span> <span className="text-neon-cyan font-bold">{selectedDeviceForHistory.appearance || '---'}</span></div>
-                  </div>
-                </div>
-
-                <div className="bg-dark-bg p-4 rounded-xl border border-dark-border">
-                  <p className="text-xs font-bold text-dark-muted uppercase mb-3 flex items-center">
-                    <ArrowRightLeft className="w-3 h-3 mr-1" /> Tiếp nhận
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-dark-muted">Ngày nhận:</span> <span className="text-dark-text">{selectedDeviceForHistory.receptionDate || selectedDeviceForHistory.importDate}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">Loại:</span> <span className="text-neon-green font-medium">{selectedDeviceForHistory.receptionType || 'NHẬP KHO'}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">Nguồn:</span> <span className="text-dark-text">{selectedDeviceForHistory.source}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">Trạng thái:</span> <span className="text-yellow-500 font-bold">{selectedDeviceForHistory.status.replace(/_/g, ' ')}</span></div>
-                  </div>
-                </div>
-
-                <div className="bg-dark-bg p-4 rounded-xl border border-dark-border">
-                  <p className="text-xs font-bold text-dark-muted uppercase mb-3 flex items-center">
-                    <User className="w-3 h-3 mr-1" /> Khách hàng
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-dark-muted">Tên:</span> <span className="text-dark-text">{selectedDeviceForHistory.customerInfo || '---'}</span></div>
-                    <div className="flex justify-between"><span className="text-dark-muted">SĐT:</span> <span className="text-dark-text">{selectedDeviceForHistory.customerPhone || '---'}</span></div>
-                    <div className="mt-2 p-2 bg-dark-card rounded text-[10px] text-dark-muted italic border border-dark-border">
-                      Ghi chú ban đầu: {selectedDeviceForHistory.notes || "Không có"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dòng thời gian luân chuyển & sửa chữa */}
-              <div>
-                <h4 className="text-lg font-bold text-dark-text mb-6 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-neon-pink" />
-                  Lịch Sử Luân Chuyển & Sửa Chữa
-                </h4>
-                <div className="relative border-l-2 border-dark-border ml-4 pl-8 space-y-8">
-                  {/* Bước 1: Tiếp nhận */}
-                  <div className="relative">
-                    <div className="absolute -left-[41px] top-0 w-5 h-5 rounded-full bg-neon-green border-4 border-dark-card shadow-[0_0_10px_rgba(0,255,0,0.5)]"></div>
-                    <div className="bg-dark-bg p-4 rounded-xl border border-dark-border">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-neon-green uppercase">Tiếp nhận thiết bị</span>
-                        <span className="text-xs text-dark-muted">{selectedDeviceForHistory.receptionDate || selectedDeviceForHistory.importDate}</span>
-                      </div>
-                      <p className="text-sm text-dark-text">Máy được tiếp nhận vào hệ thống bởi <span className="text-neon-cyan">Admin</span>.</p>
-                    </div>
-                  </div>
-
-                  {/* Các Task sửa chữa */}
-                  {state.tasks.filter(t => t.deviceId === selectedDeviceForHistory.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((task, idx) => {
-                    const assignee = state.users.find(u => u.id === task.assigneeId);
-                    const qcReport = state.qcReports.find(r => r.taskId === task.id);
-                    return (
-                      <div key={task.id} className="relative">
-                        <div className="absolute -left-[41px] top-0 w-5 h-5 rounded-full bg-neon-cyan border-4 border-dark-card shadow-[0_0_10px_rgba(0,255,255,0.5)]"></div>
-                        <div className="bg-dark-bg p-4 rounded-xl border border-dark-border">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center">
-                              <span className="text-xs font-bold text-neon-cyan uppercase mr-2">{task.type}</span>
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                task.status === 'DONG_TASK' ? 'bg-neon-green/20 text-neon-green' : 'bg-yellow-500/20 text-yellow-500'
-                              }`}>
-                                {task.status.replace(/_/g, ' ')}
-                              </span>
-                            </div>
-                            <span className="text-xs text-dark-muted">{task.createdAt}</span>
-                          </div>
-                          <div className="space-y-2">
-                            <p className="text-sm text-dark-text">
-                              Kỹ thuật viên: <span className="text-neon-cyan font-medium">{assignee?.name || 'Chưa phân'}</span>
-                            </p>
-                            {task.description && (
-                              <p className="text-xs text-dark-muted bg-dark-card p-2 rounded border border-dark-border">
-                                <Info className="w-3 h-3 inline mr-1" /> {task.description}
-                              </p>
-                            )}
-                            {task.usedParts && task.usedParts.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                {task.usedParts.map(up => {
-                                  const part = state.parts.find(p => p.id === up.partId);
-                                  return (
-                                    <span key={up.partId} className="px-2 py-1 bg-dark-card border border-dark-border rounded text-[10px] text-dark-text">
-                                      Thay: {part?.name} x{up.quantity}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            {qcReport && (
-                              <div className={`mt-3 p-3 rounded-lg border ${qcReport.status === 'PASS' ? 'bg-neon-green/5 border-neon-green/20' : 'bg-neon-pink/5 border-neon-pink/20'}`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className={`text-[10px] font-bold uppercase ${qcReport.status === 'PASS' ? 'text-neon-green' : 'text-neon-pink'}`}>
-                                    Kết quả QC: {qcReport.status}
-                                  </span>
-                                  <span className="text-[10px] text-dark-muted">{qcReport.createdAt}</span>
-                                </div>
-                                <p className="text-xs text-dark-muted italic">"{qcReport.notes}"</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Bước cuối: Hiện tại */}
-                  <div className="relative">
-                    <div className="absolute -left-[41px] top-0 w-5 h-5 rounded-full bg-dark-border border-4 border-dark-card"></div>
-                    <div className="bg-dark-card/50 p-4 rounded-xl border border-dark-border border-dashed">
-                      <p className="text-xs font-bold text-dark-muted uppercase mb-1">Trạng thái hiện tại</p>
-                      <div className="flex items-center text-sm text-dark-text">
-                        <ChevronRight className="w-4 h-4 text-neon-cyan mr-1" />
-                        Đang ở: <span className="text-neon-cyan font-bold ml-1">{getDeviceLocation(selectedDeviceForHistory)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-dark-border bg-dark-bg/50 flex justify-end">
-              <button 
-                onClick={() => setSelectedDeviceForHistory(null)}
-                className="px-6 py-2 bg-dark-card border border-dark-border rounded-lg text-sm font-medium text-dark-text hover:bg-dark-border transition-colors"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Lịch Sử Máy removed */}
     </div>
   );
 }

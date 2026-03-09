@@ -25,6 +25,8 @@ import Login from "./pages/Login";
 import Guide from "./pages/Guide";
 import InventoryMatrix from "./pages/InventoryMatrix";
 import PhieuNhapHang from "./pages/PhieuNhapHang";
+import ErrorRateReport from "./pages/ErrorRateReport";
+import LichSuThietBi from "./pages/LichSuThietBi";
 import { useAppContext } from "./store/AppContext";
 
 function AppRoutes() {
@@ -54,10 +56,12 @@ function AppRoutes() {
         <Route path="phan-phoi" element={<PhanPhoi />} />
         <Route path="hang-hoa" element={<HangHoa />} />
         <Route path="bao-cao-ton-kho" element={<InventoryMatrix />} />
+        <Route path="bao-cao-ty-le-loi" element={<ErrorRateReport />} />
         <Route path="nguon-hang" element={<NguonHang />} />
         <Route path="bao-cao-thu-nhap" element={<BaoCaoThuNhap />} />
         <Route path="nhan-vien" element={<NhanVien />} />
         <Route path="huong-dan" element={<Guide />} />
+        <Route path="thiet-bi/:imei" element={<LichSuThietBi />} />
       </Route>
     </Routes>
   );

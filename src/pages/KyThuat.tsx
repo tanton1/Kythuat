@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import DateRangePicker from "../components/DateRangePicker";
 import SearchableSelect from "../components/SearchableSelect";
@@ -15,6 +16,7 @@ import { format } from "date-fns";
 
 export default function KyThuat() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [mainTab, setMainTab] = useState<"TASKS" | "INVENTORY">("TASKS");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState<
@@ -299,7 +301,7 @@ export default function KyThuat() {
                       return (
                         device && (
                           <p className="text-sm text-dark-muted mt-1">
-                            Máy: {device.model} (IMEI: {device.imei})
+                            Máy: {device.model} (IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button>)
                           </p>
                         )
                       );
