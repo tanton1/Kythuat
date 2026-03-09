@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppContext } from "../store/AppContext";
 import { Device } from "../types";
 import {
@@ -8,6 +8,7 @@ import {
   HelpCircle,
   XCircle,
 } from "lucide-react";
+import { DeviceHistoryModal } from "../components/DeviceHistoryModal";
 
 const CHECKLIST_ITEMS = [
   { id: "power", label: "Lên nguồn" },
@@ -34,6 +35,16 @@ export default function TestDauVao() {
   const [customDateTo, setCustomDateTo] = useState("");
   const [selectedHistoryDevice, setSelectedHistoryDevice] = useState<Device | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  
+  useEffect(() => {
+    if (selectedHistoryDevice) {
+      const updatedDevice = state.devices.find(d => d.id === selectedHistoryDevice.id);
+      if (updatedDevice) {
+        setSelectedHistoryDevice(updatedDevice);
+      }
+    }
+  }, [state.devices, selectedHistoryDevice]);
+
   const [testResults, setTestResults] = useState<
     Record<string, "OK" | "FAIL" | "UNTESTED">
   >({});
@@ -89,9 +100,7 @@ export default function TestDauVao() {
 
   const handleSubmit = () => {
     if (!selectedDevice) return;
-
-    // In a real app, we would save the test report to the database.
-    // Here we just update the device status.
+    console.log("Submitting test results:", testResults);
 
     const updatedDevice = {
       ...selectedDevice,
@@ -210,69 +219,14 @@ export default function TestDauVao() {
           </div>
 
           {selectedHistoryDevice && (
-            <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-              <div className="bg-dark-card rounded-xl border border-dark-border w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-dark-text">Chi tiết máy: {selectedHistoryDevice.model}</h2>
-                  <button onClick={() => setSelectedHistoryDevice(null)} className="text-dark-muted hover:text-neon-pink"><XCircle /></button>
-                </div>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-dark-muted mb-1">IMEI</p>
-                      <p className="font-mono text-dark-text">{selectedHistoryDevice.imei}</p>
-                    </div>
-                    <div>
-                      <p className="text-dark-muted mb-1">Trạng thái</p>
-                      <p className="font-medium text-neon-cyan">{selectedHistoryDevice.status}</p>
-                    </div>
-                    <div>
-                      <p className="text-dark-muted mb-1">Ngoại hình</p>
-                      <p className="font-medium text-dark-text">{selectedHistoryDevice.appearance || 'Không rõ'}</p>
-                    </div>
-                    <div>
-                      <p className="text-dark-muted mb-1">Nguồn gốc</p>
-                      <p className="font-medium text-dark-text">{selectedHistoryDevice.source}</p>
-                    </div>
-                  </div>
-
-                  {selectedHistoryDevice.testResults && (
-                    <div>
-                      <h3 className="text-sm font-medium text-neon-cyan mb-3 border-b border-dark-border pb-2">Kết quả Test</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {CHECKLIST_ITEMS.map(item => {
-                          const result = selectedHistoryDevice.testResults?.[item.id] || 'UNTESTED';
-                          return (
-                            <div key={item.id} className="flex justify-between items-center bg-dark-bg p-2 rounded border border-dark-border">
-                              <span className="text-sm text-dark-text">{item.label}</span>
-                              {result === 'OK' && <span className="text-xs font-bold text-neon-green px-2 py-1 bg-neon-green/10 rounded flex items-center"><CheckCircle className="w-3 h-3 mr-1"/> OK</span>}
-                              {result === 'FAIL' && <span className="text-xs font-bold text-neon-pink px-2 py-1 bg-neon-pink/10 rounded flex items-center"><AlertCircle className="w-3 h-3 mr-1"/> Lỗi</span>}
-                              {result === 'UNTESTED' && <span className="text-xs font-bold text-gray-400 px-2 py-1 bg-gray-500/10 rounded flex items-center"><HelpCircle className="w-3 h-3 mr-1"/> Chưa test</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <h3 className="text-sm font-medium text-neon-cyan mb-2 border-b border-dark-border pb-2">Ghi chú</h3>
-                    <div className="bg-dark-bg p-3 rounded border border-dark-border text-sm text-dark-text whitespace-pre-wrap">
-                      {selectedHistoryDevice.notes || 'Không có ghi chú'}
-                    </div>
-                  </div>
-
-                  {selectedHistoryDevice.images && selectedHistoryDevice.images.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-neon-cyan mb-2 border-b border-dark-border pb-2">Ảnh tình trạng</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedHistoryDevice.images.map((img, idx) => <img key={idx} src={img} className="w-24 h-24 object-cover rounded border border-dark-border" />)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <DeviceHistoryModal
+              device={selectedHistoryDevice}
+              tasks={state.tasks}
+              incidents={state.incidents}
+              qcReports={state.qcReports}
+              parts={state.parts}
+              onClose={() => setSelectedHistoryDevice(null)}
+            />
           )}
         </div>
       ) : (

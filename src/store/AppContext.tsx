@@ -13,6 +13,7 @@ import {
   Supplier,
   Product,
   AppNotification,
+  ImportReceipt,
 } from "../types";
 
 export type Action =
@@ -39,6 +40,7 @@ export type Action =
   | { type: "ADD_NOTIFICATION"; payload: AppNotification }
   | { type: "UPDATE_NOTIFICATION"; payload: AppNotification }
   | { type: "DELETE_NOTIFICATION"; payload: string }
+  | { type: "ADD_IMPORT_RECEIPT"; payload: ImportReceipt }
   | { type: "SET_FULL_STATE"; payload: Partial<AppState> }
   | {
       type: "UPDATE_PART_STOCK";
@@ -157,15 +159,19 @@ const initialState: AppState = {
   suppliers: MOCK_SUPPLIERS,
   products: MOCK_PRODUCTS,
   notifications: [],
+  importReceipts: [],
 };
 
 const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case "SET_USER":
       return { ...state, currentUser: action.payload };
+    case "ADD_IMPORT_RECEIPT":
+      return { ...state, importReceipts: [...state.importReceipts, action.payload] };
     case "ADD_DEVICE":
       return { ...state, devices: [...state.devices, action.payload] };
     case "UPDATE_DEVICE":
+      console.log("Updating device:", action.payload);
       return {
         ...state,
         devices: state.devices.map((d) =>
@@ -372,6 +378,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       { key: 'suppliers', name: 'suppliers' },
       { key: 'products', name: 'products' },
       { key: 'notifications', name: 'notifications' },
+      { key: 'importReceipts', name: 'importReceipts' },
     ];
 
     const unsubscribes = collections.map(({ key, name }) => {
@@ -445,6 +452,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           break;
         case 'DELETE_NOTIFICATION':
           await deleteDoc(doc(db, 'notifications', action.payload));
+          break;
+        case 'ADD_IMPORT_RECEIPT':
+          await setDoc(doc(db, 'importReceipts', action.payload.id), action.payload);
           break;
         case 'UPDATE_PART_STOCK': {
           const part = stateRef.current.parts.find(p => p.id === action.payload.partId);

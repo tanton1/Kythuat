@@ -44,6 +44,12 @@ const NAV_ITEMS = [
     roles: ["ADMIN", "KHO_MAY", "TESTER"],
   },
   {
+    path: "/phieu-nhap-hang",
+    label: "Phiếu Nhập Hàng",
+    icon: ClipboardCheck,
+    roles: ["ADMIN", "KHO_MAY"],
+  },
+  {
     path: "/kho-may",
     label: "Kho Máy",
     icon: Smartphone,

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device, DeviceStatus } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
@@ -19,6 +20,7 @@ import { format } from "date-fns";
 
 export default function TiepNhan() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'IMPORT' | 'SHOP' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN'>('IMPORT');
   const [searchImei, setSearchImei] = useState("");
   const [foundDevice, setFoundDevice] = useState<Device | null>(null);
@@ -101,7 +103,12 @@ export default function TiepNhan() {
       return alert("Vui lòng nhập ít nhất 1 IMEI");
     }
 
+    const importItems: any[] = [];
+    let totalAmount = 0;
+
     imeiList.forEach(item => {
+      const importPrice = activeTab === 'TRADE_IN' || activeTab === 'IMPORT' ? Number(formData.importPrice) || 0 : foundDevice?.importPrice || 0;
+      
       const newDevice: Device = {
         id: `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         imei: item.imei,
@@ -110,7 +117,7 @@ export default function TiepNhan() {
         capacity: formData.capacity || "",
         source: activeTab === 'IMPORT' || activeTab === 'SHOP' ? formData.source || "" : 
                 activeTab === 'TRADE_IN' ? "Khách thu cũ (Trade-in)" : "Khách Lẻ",
-        importPrice: activeTab === 'TRADE_IN' || activeTab === 'IMPORT' ? Number(formData.importPrice) || 0 : foundDevice?.importPrice || 0,
+        importPrice,
         importDate: foundDevice?.importDate || format(new Date(), "yyyy-MM-dd HH:mm"),
         receiverId: state.currentUser!.id,
         status,
@@ -123,7 +130,31 @@ export default function TiepNhan() {
       };
 
       dispatch({ type: "ADD_DEVICE", payload: newDevice });
+
+      if (activeTab === 'IMPORT') {
+        importItems.push({
+          imei: item.imei,
+          model: formData.model || "",
+          color: formData.color || "",
+          capacity: formData.capacity || "",
+          importPrice,
+        });
+        totalAmount += importPrice;
+      }
     });
+
+    if (activeTab === 'IMPORT' && importItems.length > 0) {
+      const newImportReceipt = {
+        id: `ir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        supplierName: formData.source || "Không rõ",
+        importDate: format(new Date(), "yyyy-MM-dd HH:mm"),
+        totalAmount,
+        notes: formData.notes || "",
+        items: importItems,
+        receiverId: state.currentUser!.id,
+      };
+      dispatch({ type: "ADD_IMPORT_RECEIPT", payload: newImportReceipt });
+    }
 
     // Reset form
     setFormData({ model: "", color: "", capacity: "", source: "", notes: "", customerInfo: "", customerPhone: "", importPrice: 0 });
@@ -132,6 +163,10 @@ export default function TiepNhan() {
     setImeiList([]);
     setCurrentImei("");
     alert("Tiếp nhận thành công!");
+    
+    if (activeTab === 'IMPORT') {
+      navigate('/phieu-nhap-hang');
+    }
   };
 
   const handleAddImei = (e: React.KeyboardEvent) => {

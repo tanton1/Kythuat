@@ -24,6 +24,7 @@ import QuyetDinh from "./pages/QuyetDinh";
 import Login from "./pages/Login";
 import Guide from "./pages/Guide";
 import InventoryMatrix from "./pages/InventoryMatrix";
+import PhieuNhapHang from "./pages/PhieuNhapHang";
 import { useAppContext } from "./store/AppContext";
 
 function AppRoutes() {
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="tiep-nhan" element={<TiepNhan />} />
+        <Route path="phieu-nhap-hang" element={<PhieuNhapHang />} />
         <Route path="kho-may" element={<KhoMay />} />
         <Route path="test-dau-vao" element={<TestDauVao />} />
         <Route path="quyet-dinh" element={<QuyetDinh />} />

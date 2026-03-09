@@ -171,6 +171,22 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface ImportReceipt {
+  id: string;
+  supplierName: string;
+  importDate: string;
+  totalAmount: number;
+  notes: string;
+  items: {
+    imei: string;
+    model: string;
+    color: string;
+    capacity: string;
+    importPrice: number;
+  }[];
+  receiverId: string;
+}
+
 export interface AppState {
   currentUser: User | null;
   users: User[];
@@ -184,4 +200,5 @@ export interface AppState {
   suppliers: Supplier[];
   products: Product[];
   notifications: AppNotification[];
+  importReceipts: ImportReceipt[];
 }
