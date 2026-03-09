@@ -5,6 +5,7 @@
   --color-neon-green: #00FF41;
   --color-neon-cyan: #00FFFF;
   --color-neon-pink: #FF00FF;
+  --color-neon-orange: #FF9900;
   --color-dark-bg: #050505;
   --color-dark-card: #111111;
   --color-dark-border: #222222;
@@ -45,6 +46,10 @@ body {
 .neon-text {
   color: var(--color-neon-cyan);
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+.neon-text-orange {
+  color: var(--color-neon-orange);
+  text-shadow: 0 0 8px rgba(255, 153, 0, 0.4);
 }
 .neon-green-text {
   color: var(--color-neon-green);

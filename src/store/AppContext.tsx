@@ -41,6 +41,8 @@ export type Action =
   | { type: "UPDATE_NOTIFICATION"; payload: AppNotification }
   | { type: "DELETE_NOTIFICATION"; payload: string }
   | { type: "ADD_IMPORT_RECEIPT"; payload: ImportReceipt }
+  | { type: "UPDATE_IMPORT_RECEIPT"; payload: ImportReceipt }
+  | { type: "DELETE_IMPORT_RECEIPT"; payload: string }
   | { type: "SET_FULL_STATE"; payload: Partial<AppState> }
   | {
       type: "UPDATE_PART_STOCK";
@@ -168,6 +170,18 @@ const appReducer = (state: AppState, action: Action): AppState => {
       return { ...state, currentUser: action.payload };
     case "ADD_IMPORT_RECEIPT":
       return { ...state, importReceipts: [...state.importReceipts, action.payload] };
+    case "UPDATE_IMPORT_RECEIPT":
+      return {
+        ...state,
+        importReceipts: state.importReceipts.map((ir) =>
+          ir.id === action.payload.id ? action.payload : ir
+        ),
+      };
+    case "DELETE_IMPORT_RECEIPT":
+      return {
+        ...state,
+        importReceipts: state.importReceipts.filter((ir) => ir.id !== action.payload),
+      };
     case "ADD_DEVICE":
       return { ...state, devices: [...state.devices, action.payload] };
     case "UPDATE_DEVICE":

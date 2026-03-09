@@ -1,82 +1,76 @@
-import React from 'react';
-import { XCircle, Wrench, DollarSign, MapPin, ClipboardCheck } from 'lucide-react';
-import { Device, Task, Incident, QCReport, Part } from '../types';
+import React, { useState } from "react";
+import { Device } from "../types";
+import { X, Clock, Smartphone, Info, User, Calendar } from "lucide-react";
 
 interface DeviceHistoryModalProps {
-  device: Device;
-  tasks: Task[];
-  incidents: Incident[];
-  qcReports: QCReport[];
-  parts: Part[];
+  devices: Device[];
+  model: string;
   onClose: () => void;
 }
 
-export const DeviceHistoryModal: React.FC<DeviceHistoryModalProps> = ({
-  device,
-  tasks,
-  incidents,
-  qcReports,
-  parts,
-  onClose,
-}) => {
-  // Calculate repair history
-  const deviceTasks = tasks.filter(t => t.deviceId === device.id);
-  
-  // Calculate costs
-  const repairCosts = deviceTasks.reduce((sum, task) => {
-    const partsCost = (task.usedParts || []).reduce((pSum, up) => {
-      const part = parts.find(p => p.id === up.partId);
-      return pSum + (part ? part.cost * up.quantity : 0);
-    }, 0);
-    return sum + partsCost + (task.commission || 0);
-  }, 0);
-  
-  const totalCost = device.importPrice + repairCosts;
+export default function DeviceHistoryModal({ devices, model, onClose }: DeviceHistoryModalProps) {
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+
+  const modelDevices = devices.filter(d => d.model === model);
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-dark-card rounded-xl border border-dark-border w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-dark-text">Lịch sử chi tiết: {device.model} - {device.imei}</h2>
-          <button onClick={onClose} className="text-dark-muted hover:text-neon-pink"><XCircle /></button>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-dark-card rounded-xl shadow-xl border border-dark-border w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="p-4 border-b border-dark-border flex justify-between items-center">
+          <h2 className="text-xl font-bold text-neon-cyan">Chi tiết tồn kho: {model}</h2>
+          <button onClick={onClose} className="text-dark-muted hover:text-dark-text">
+            <X className="w-6 h-6" />
+          </button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Cost Breakdown */}
-          <div className="bg-dark-bg p-4 rounded-lg border border-dark-border">
-            <h3 className="text-sm font-medium text-neon-cyan mb-3 flex items-center"><DollarSign className="w-4 h-4 mr-2"/> Chi phí</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Giá nhập:</span> <span>{device.importPrice.toLocaleString()}đ</span></div>
-              <div className="flex justify-between"><span>Chi phí sửa chữa:</span> <span>{repairCosts.toLocaleString()}đ</span></div>
-              <div className="flex justify-between font-bold text-neon-green"><span>Tổng giá:</span> <span>{totalCost.toLocaleString()}đ</span></div>
-            </div>
-          </div>
-
-          {/* Repair History */}
-          <div className="bg-dark-bg p-4 rounded-lg border border-dark-border">
-            <h3 className="text-sm font-medium text-neon-cyan mb-3 flex items-center"><Wrench className="w-4 h-4 mr-2"/> Lịch sử sửa chữa ({deviceTasks.length})</h3>
-            <div className="space-y-2 max-h-40 overflow-y-auto text-sm">
-              {deviceTasks.map(task => (
-                <div key={task.id} className="border-b border-dark-border pb-1">
-                  <p className="font-medium">{task.type}</p>
-                  <p className="text-xs text-dark-muted">{new Date(task.createdAt).toLocaleDateString()} - {task.status}</p>
-                </div>
+        
+        <div className="flex-1 overflow-y-auto p-4">
+          <table className="min-w-full dark-table">
+            <thead>
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase">IMEI</th>
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase">Trạng thái</th>
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase">Vị trí</th>
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase">Ngày nhập</th>
+              </tr>
+            </thead>
+            <tbody>
+              {modelDevices.map(device => (
+                <tr 
+                  key={device.id} 
+                  className="hover:bg-dark-border/30 cursor-pointer"
+                  onClick={() => setSelectedDevice(device)}
+                >
+                  <td className="px-4 py-3 text-sm text-neon-cyan font-medium">{device.imei}</td>
+                  <td className="px-4 py-3 text-sm text-dark-text">{device.status}</td>
+                  <td className="px-4 py-3 text-sm text-dark-muted">{device.location}</td>
+                  <td className="px-4 py-3 text-sm text-dark-muted">{device.importDate}</td>
+                </tr>
               ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Movement History (Simplified) */}
-        <div className="mt-6 bg-dark-bg p-4 rounded-lg border border-dark-border">
-          <h3 className="text-sm font-medium text-neon-cyan mb-3 flex items-center"><MapPin className="w-4 h-4 mr-2"/> Vòng đi của máy</h3>
-          <div className="text-sm text-dark-text">
-            <p>Nhập kho: {new Date(device.importDate).toLocaleDateString()} - Nguồn: {device.source}</p>
-            {qcReports.filter(qc => qc.deviceId === device.id).map(qc => (
-              <p key={qc.id}>QC: {new Date(qc.testedAt).toLocaleDateString()} - Kết quả: {qc.status}</p>
-            ))}
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {selectedDevice && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
+          <div className="bg-dark-card rounded-xl shadow-xl border border-neon-cyan p-6 w-full max-w-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-neon-cyan">Thông tin chi tiết</h3>
+              <button onClick={() => setSelectedDevice(null)} className="text-dark-muted hover:text-dark-text">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <p><span className="text-dark-muted">IMEI:</span> <span className="text-dark-text font-bold">{selectedDevice.imei}</span></p>
+              <p><span className="text-dark-muted">Model:</span> <span className="text-dark-text">{selectedDevice.model}</span></p>
+              <p><span className="text-dark-muted">Trạng thái:</span> <span className="text-neon-green">{selectedDevice.status}</span></p>
+              <p><span className="text-dark-muted">Vị trí:</span> <span className="text-dark-text">{selectedDevice.location}</span></p>
+              <p><span className="text-dark-muted">Ngày nhập:</span> <span className="text-dark-text">{selectedDevice.importDate}</span></p>
+              <p><span className="text-dark-muted">Ghi chú:</span> <span className="text-dark-text">{selectedDevice.notes}</span></p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
+}

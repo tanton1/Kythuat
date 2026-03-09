@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device, DeviceStatus } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
@@ -21,6 +21,7 @@ import { format } from "date-fns";
 export default function TiepNhan() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'IMPORT' | 'SHOP' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN'>('IMPORT');
   const [searchImei, setSearchImei] = useState("");
   const [foundDevice, setFoundDevice] = useState<Device | null>(null);
@@ -39,6 +40,58 @@ export default function TiepNhan() {
     customerPhone: "",
     importPrice: 0,
   });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingReceiptId, setEditingReceiptId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (location.state?.copyFromReceipt) {
+      const receipt = location.state.copyFromReceipt;
+      setActiveTab('IMPORT');
+      setFormData(prev => ({
+        ...prev,
+        source: receipt.supplierName,
+        notes: receipt.notes,
+        // Pre-fill model, color, capacity, importPrice from the first item if exists
+        ...(receipt.items && receipt.items.length > 0 ? {
+          model: receipt.items[0].model,
+          color: receipt.items[0].color,
+          capacity: receipt.items[0].capacity,
+          importPrice: receipt.items[0].importPrice,
+        } : {})
+      }));
+      // Clear the state so it doesn't re-trigger on refresh
+      window.history.replaceState({}, document.title);
+    } else if (location.state?.editReceipt) {
+      const receipt = location.state.editReceipt;
+      setActiveTab('IMPORT');
+      setIsEditing(true);
+      setEditingReceiptId(receipt.id);
+      setFormData(prev => ({
+        ...prev,
+        source: receipt.supplierName,
+        notes: receipt.notes,
+        // Pre-fill model, color, capacity, importPrice from the first item if exists
+        ...(receipt.items && receipt.items.length > 0 ? {
+          model: receipt.items[0].model,
+          color: receipt.items[0].color,
+          capacity: receipt.items[0].capacity,
+          importPrice: receipt.items[0].importPrice,
+        } : {})
+      }));
+      
+      // Load IMEIs from the receipt
+      if (receipt.items) {
+        setImeiList(receipt.items.map((item: any) => ({
+          imei: item.imei,
+          images: [] // We don't have images in the receipt items currently
+        })));
+      }
+      
+      // Clear the state so it doesn't re-trigger on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, imei: string) => {
     const files = e.target.files;
@@ -144,16 +197,35 @@ export default function TiepNhan() {
     });
 
     if (activeTab === 'IMPORT' && importItems.length > 0) {
-      const newImportReceipt = {
-        id: `ir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        supplierName: formData.source || "Không rõ",
-        importDate: format(new Date(), "yyyy-MM-dd HH:mm"),
-        totalAmount,
-        notes: formData.notes || "",
-        items: importItems,
-        receiverId: state.currentUser!.id,
-      };
-      dispatch({ type: "ADD_IMPORT_RECEIPT", payload: newImportReceipt });
+      if (isEditing && editingReceiptId) {
+        // Update existing receipt
+        const updatedReceipt = {
+          id: editingReceiptId,
+          supplierName: formData.source || "Không rõ",
+          importDate: format(new Date(), "yyyy-MM-dd HH:mm"), // Keep original date or update? Updating for now.
+          totalAmount,
+          notes: formData.notes || "",
+          items: importItems,
+          receiverId: state.currentUser!.id,
+        };
+        dispatch({ type: "UPDATE_IMPORT_RECEIPT", payload: updatedReceipt });
+        
+        // Note: Updating devices associated with the receipt is complex because IMEIs might have changed,
+        // devices might have been sold, etc. For simplicity in this edit flow, we are just updating the receipt record.
+        // A full implementation would need to reconcile the old items with the new items and update/create/delete devices accordingly.
+      } else {
+        // Create new receipt
+        const newImportReceipt = {
+          id: `ir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          supplierName: formData.source || "Không rõ",
+          importDate: format(new Date(), "yyyy-MM-dd HH:mm"),
+          totalAmount,
+          notes: formData.notes || "",
+          items: importItems,
+          receiverId: state.currentUser!.id,
+        };
+        dispatch({ type: "ADD_IMPORT_RECEIPT", payload: newImportReceipt });
+      }
     }
 
     // Reset form
@@ -162,7 +234,9 @@ export default function TiepNhan() {
     setSearchImei("");
     setImeiList([]);
     setCurrentImei("");
-    alert("Tiếp nhận thành công!");
+    setIsEditing(false);
+    setEditingReceiptId(null);
+    alert(isEditing ? "Cập nhật phiếu nhập thành công!" : "Tiếp nhận thành công!");
     
     if (activeTab === 'IMPORT') {
       navigate('/phieu-nhap-hang');
@@ -263,25 +337,29 @@ export default function TiepNhan() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-dark-muted">
-                    Nhập IMEI (Nhấn Enter để thêm nhiều máy)
+                    {isEditing ? "Danh sách IMEI trong phiếu nhập" : "Nhập IMEI (Nhấn Enter để thêm nhiều máy)"}
                   </label>
                   <div className="space-y-2">
-                    <input
-                      type="text"
-                      className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
-                      placeholder="Nhập IMEI và nhấn Enter..."
-                      value={currentImei}
-                      onChange={(e) => setCurrentImei(e.target.value)}
-                      onKeyDown={handleAddImei}
-                    />
+                    {!isEditing && (
+                      <input
+                        type="text"
+                        className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
+                        placeholder="Nhập IMEI và nhấn Enter..."
+                        value={currentImei}
+                        onChange={(e) => setCurrentImei(e.target.value)}
+                        onKeyDown={handleAddImei}
+                      />
+                    )}
                     <div className="grid grid-cols-1 gap-2">
                       {imeiList.map((item, idx) => (
                         <div key={idx} className="p-2 bg-dark-bg border border-dark-border rounded-md">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-mono text-neon-cyan">{item.imei}</span>
-                            <button type="button" onClick={() => removeImei(idx)} className="text-neon-pink hover:text-neon-pink/80">
-                              <XCircle className="w-4 h-4" />
-                            </button>
+                            {!isEditing && (
+                              <button type="button" onClick={() => removeImei(idx)} className="text-neon-pink hover:text-neon-pink/80">
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                           <input
                             type="file"

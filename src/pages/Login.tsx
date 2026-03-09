@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Smartphone, Lock, User, AlertCircle } from "lucide-react";
 
@@ -36,9 +37,11 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 mb-4">
             <Smartphone className="w-8 h-8 text-neon-cyan" />
           </div>
-          <h1 className="text-3xl font-bold text-neon-cyan tracking-tight neon-text">
-            Phone House
-          </h1>
+          <Link to="/">
+            <h1 className="text-3xl font-bold text-neon-cyan tracking-tight neon-text">
+              Phone House
+            </h1>
+          </Link>
           <p className="text-dark-muted mt-2">
             Hệ thống quản lý kỹ thuật & kho máy
           </p>

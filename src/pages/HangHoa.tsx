@@ -3,6 +3,7 @@ import { useAppContext } from "../store/AppContext";
 import { Product } from "../types";
 import { Plus, Search, Edit, Trash2, Box, Smartphone, Wrench, Settings } from "lucide-react";
 import SearchableSelect from "../components/SearchableSelect";
+import DeviceHistoryModal from "../components/DeviceHistoryModal";
 
 export default function HangHoa() {
   const { state, dispatch } = useAppContext();
@@ -10,6 +11,7 @@ export default function HangHoa() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<"ALL" | "DEVICE" | "PART" | "SERVICE">("ALL");
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Product>>({
     id: "",
@@ -245,60 +247,81 @@ export default function HangHoa() {
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Giá Vốn</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Giá Bán</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neon-pink">Hoa Hồng</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Tồn Kho</th>
                 <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-dark-border/30">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neon-cyan">
-                    {product.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-text font-medium">
-                    {product.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      product.category === 'DEVICE' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' : 
-                      product.category === 'PART' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30' :
-                      'bg-neon-pink/10 text-neon-pink border border-neon-pink/30'
-                    }`}>
-                      {product.category === 'DEVICE' ? 'Máy' : product.category === 'PART' ? 'Linh Kiện' : 'Task Kỹ Thuật'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">
-                    {product.model}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">
-                    {product.costPrice.toLocaleString('vi-VN')} đ
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neon-green">
-                    {product.sellPrice.toLocaleString('vi-VN')} đ
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neon-pink font-bold">
-                    {product.commission?.toLocaleString('vi-VN') || 0} đ
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(product)}
-                      className="text-dark-muted hover:text-neon-cyan mr-3 transition-colors"
-                      title="Sửa"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(product.id)}
-                      className="text-dark-muted hover:text-neon-pink transition-colors"
-                      title="Xóa"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredProducts.map((product) => {
+                const inventory = product.category === 'DEVICE'
+                  ? state.devices.filter(d => d.model === product.model && d.status !== 'DA_BAN').length
+                  : product.category === 'PART'
+                    ? state.parts.find(p => p.id === product.id)?.stock || 0
+                    : 0;
+
+                return (
+                  <tr key={product.id} className="hover:bg-dark-border/30">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neon-cyan">
+                      {product.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-text font-medium">
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        product.category === 'DEVICE' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' : 
+                        product.category === 'PART' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30' :
+                        'bg-neon-pink/10 text-neon-pink border border-neon-pink/30'
+                      }`}>
+                        {product.category === 'DEVICE' ? 'Máy' : product.category === 'PART' ? 'Linh Kiện' : 'Task Kỹ Thuật'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">
+                      {product.model}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">
+                      {product.costPrice.toLocaleString('vi-VN')} đ
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neon-green">
+                      {product.sellPrice.toLocaleString('vi-VN')} đ
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neon-pink font-bold">
+                      {product.commission?.toLocaleString('vi-VN') || 0} đ
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-dark-text">
+                      {product.category === 'DEVICE' ? (
+                        <button 
+                          onClick={() => setSelectedModel(product.model)}
+                          className="hover:text-neon-cyan underline decoration-neon-cyan/50 underline-offset-4"
+                        >
+                          {inventory}
+                        </button>
+                      ) : (
+                        inventory
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleEdit(product)}
+                        className="text-dark-muted hover:text-neon-cyan mr-3 transition-colors"
+                        title="Sửa"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        className="text-dark-muted hover:text-neon-pink transition-colors"
+                        title="Xóa"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-dark-muted">
+                  <td colSpan={9} className="px-6 py-8 text-center text-sm text-dark-muted">
                     Không tìm thấy hàng hóa nào.
                   </td>
                 </tr>
@@ -307,6 +330,13 @@ export default function HangHoa() {
           </table>
         </div>
       </div>
+      {selectedModel && (
+        <DeviceHistoryModal 
+          devices={state.devices} 
+          model={selectedModel} 
+          onClose={() => setSelectedModel(null)} 
+        />
+      )}
     </div>
   );
 }

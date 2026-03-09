@@ -20,6 +20,11 @@ import {
   HelpCircle,
   LogOut,
   Table,
+  Box,
+  Truck,
+  FileText,
+  Activity,
+  BookOpen,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -30,69 +35,48 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const NAV_ITEMS = [
+const NAV_GROUPS = [
   {
-    path: "/",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    roles: ["ADMIN", "TRUONG_KT"],
+    title: "Tổng Quan",
+    items: [
+      { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "TRUONG_KT"] },
+    ]
   },
   {
-    path: "/tiep-nhan",
-    label: "Nhập Hàng",
-    icon: UserPlus,
-    roles: ["ADMIN", "KHO_MAY", "TESTER"],
+    title: "Quản Lý Kho",
+    items: [
+      { path: "/hang-hoa", label: "Danh Mục Hàng Hóa", icon: Box, roles: ["ADMIN"] },
+      { path: "/phieu-nhap-hang", label: "Phiếu Nhập Hàng", icon: FileText, roles: ["ADMIN", "KHO_MAY"] },
+      { path: "/kho-may", label: "Kho Máy", icon: Smartphone, roles: ["ADMIN", "KHO_MAY"] },
+      { path: "/kho-linh-kien", label: "Kho Linh Kiện", icon: Package, roles: ["ADMIN", "KHO_LINH_KIEN"] },
+    ]
   },
   {
-    path: "/phieu-nhap-hang",
-    label: "Phiếu Nhập Hàng",
-    icon: ClipboardCheck,
-    roles: ["ADMIN", "KHO_MAY"],
+    title: "Quy Trình Kỹ Thuật",
+    items: [
+      { path: "/test-dau-vao", label: "Test Đầu Vào", icon: Activity, roles: ["ADMIN", "TESTER", "TRUONG_KT"] },
+      { path: "/quyet-dinh", label: "Duyệt Quyết Định", icon: ClipboardCheck, roles: ["ADMIN", "TRUONG_KT"] },
+      { path: "/dieu-phoi", label: "Điều Phối Task", icon: Settings, roles: ["ADMIN", "TRUONG_KT"] },
+      { path: "/ky-thuat", label: "Kỹ Thuật", icon: Wrench, roles: ["ADMIN", "KY_THUAT"] },
+      { path: "/qc", label: "QC & Thẩm Định", icon: ShieldCheck, roles: ["ADMIN", "QC"] },
+    ]
   },
   {
-    path: "/kho-may",
-    label: "Kho Máy",
-    icon: Smartphone,
-    roles: ["ADMIN", "KHO_MAY"],
+    title: "Kinh Doanh & Báo Cáo",
+    items: [
+      { path: "/phan-phoi", label: "Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"] },
+      { path: "/bao-cao-ton-kho", label: "Báo Cáo Tồn Kho", icon: Table, roles: ["ADMIN", "KHO_MAY", "TRUONG_KT"] },
+      { path: "/nguon-hang", label: "Báo Cáo Theo Nguồn", icon: Truck, roles: ["ADMIN", "KHO_MAY"] },
+      { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"] },
+    ]
   },
   {
-    path: "/test-dau-vao",
-    label: "Test Đầu Vào",
-    icon: ClipboardCheck,
-    roles: ["ADMIN", "TESTER", "TRUONG_KT"],
-  },
-  {
-    path: "/quyet-dinh",
-    label: "Duyệt Quyết Định",
-    icon: HelpCircle,
-    roles: ["ADMIN", "TRUONG_KT"],
-  },
-  {
-    path: "/dieu-phoi",
-    label: "Điều Phối Task",
-    icon: Settings,
-    roles: ["ADMIN", "TRUONG_KT"],
-  },
-  {
-    path: "/ky-thuat",
-    label: "Kỹ Thuật",
-    icon: Wrench,
-    roles: ["ADMIN", "KY_THUAT"],
-  },
-  {
-    path: "/kho-linh-kien",
-    label: "Kho Linh Kiện",
-    icon: Package,
-    roles: ["ADMIN", "KHO_LINH_KIEN"],
-  },
-  { path: "/qc", label: "QC", icon: ShieldCheck, roles: ["ADMIN", "QC"] },
-  { path: "/phan-phoi", label: "Phân Phối & Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"] },
-  { path: "/hang-hoa", label: "Hàng Hóa", icon: Package, roles: ["ADMIN"] },
-  { path: "/bao-cao-ton-kho", label: "Báo Cáo Tồn Kho", icon: Table, roles: ["ADMIN", "KHO_MAY", "TRUONG_KT"] },
-  { path: "/nguon-hang", label: "Nguồn Hàng", icon: Package, roles: ["ADMIN", "KHO_MAY"] },
-  { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"] },
-  { path: "/nhan-vien", label: "Nhân Viên", icon: Users, roles: ["ADMIN"] },
-  { path: "/huong-dan", label: "Hướng Dẫn", icon: HelpCircle, roles: ["ADMIN", "KHO_MAY", "TESTER", "TRUONG_KT", "KY_THUAT", "KHO_LINH_KIEN", "QC", "SALE"] },
+    title: "Hệ Thống",
+    items: [
+      { path: "/nhan-vien", label: "Nhân Sự", icon: Users, roles: ["ADMIN"] },
+      { path: "/huong-dan", label: "Hướng Dẫn", icon: BookOpen, roles: ["ADMIN", "KHO_MAY", "TESTER", "TRUONG_KT", "KY_THUAT", "KHO_LINH_KIEN", "QC", "SALE"] },
+    ]
+  }
 ];
 
 export default function Layout() {
@@ -120,10 +104,6 @@ export default function Layout() {
     window.location.href = "/"; // Simple reload to clear state
   };
 
-  const visibleNavItems = NAV_ITEMS.filter(
-    (item) => state.currentUser && item.roles.includes(state.currentUser.role),
-  );
-
   return (
     <div className="flex h-screen bg-dark-bg font-sans text-dark-text overflow-hidden">
       {/* Sidebar Overlay */}
@@ -140,43 +120,58 @@ export default function Layout() {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 border-b border-dark-border flex justify-between items-center">
-          <div>
+          <Link to="/">
             <h1 className="text-2xl font-bold text-neon-cyan tracking-tight neon-text">
               Phone House
             </h1>
             <p className="text-xs text-dark-muted mt-1">
               Hệ thống quản lý kỹ thuật
             </p>
-          </div>
+          </Link>
           <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-dark-muted hover:bg-dark-border hover:text-dark-text rounded-md">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+          {NAV_GROUPS.map((group, idx) => {
+            const visibleItems = group.items.filter(
+              (item) => state.currentUser && item.roles.includes(state.currentUser.role)
+            );
+
+            if (visibleItems.length === 0) return null;
+
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsSidebarOpen(false)}
-                className={cn(
-                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
-                  isActive
-                    ? "bg-neon-cyan/10 text-neon-cyan neon-border"
-                    : "text-dark-text hover:bg-dark-border",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "mr-3 h-5 w-5",
-                    isActive ? "text-neon-cyan" : "text-dark-muted",
-                  )}
-                />
-                {item.label}
-              </Link>
+              <div key={idx} className="space-y-1">
+                <h3 className="px-3 text-[10px] font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                  {group.title}
+                </h3>
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setIsSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                        isActive
+                          ? "bg-neon-cyan/10 text-neon-cyan neon-border"
+                          : "text-dark-text hover:bg-dark-border hover:text-neon-cyan",
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          "mr-3 h-4 w-4",
+                          isActive ? "text-neon-cyan" : "text-dark-muted",
+                        )}
+                      />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
@@ -248,11 +243,37 @@ export default function Layout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-dark-bg">
+        <main className="flex-1 overflow-y-auto bg-dark-bg pb-20">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             <Outlet />
           </div>
         </main>
+
+        {/* Bottom Navigation (Fixed) */}
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-card border-t border-dark-border lg:hidden flex justify-around p-2">
+          {[
+            { path: "/", label: "Dashboard", icon: LayoutDashboard },
+            { path: "/phieu-nhap-hang", label: "Nhập Hàng", icon: ClipboardCheck },
+            { path: "/dieu-phoi", label: "Điều Phối", icon: Settings },
+            { path: "/bao-cao-ton-kho", label: "Tồn Kho", icon: Table },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex flex-col items-center p-2 text-[10px] font-medium rounded-lg transition-colors",
+                  isActive ? "text-neon-cyan" : "text-dark-muted hover:text-dark-text"
+                )}
+              >
+                <Icon className="h-5 w-5 mb-1" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

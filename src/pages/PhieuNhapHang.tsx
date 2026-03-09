@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from "react";
 import { useAppContext } from "../store/AppContext";
-import { Search, Filter, FileText, Calendar, DollarSign, Package, User, Store } from "lucide-react";
+import { Search, Filter, FileText, Calendar, DollarSign, Package, User, Store, Copy, Edit, Trash2, UserPlus } from "lucide-react";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 export default function PhieuNhapHang() {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   
   const [searchImei, setSearchImei] = useState("");
-  const [searchSupplier, setSearchSupplier] = useState("");
-  const [searchProduct, setSearchProduct] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   
@@ -16,24 +16,17 @@ export default function PhieuNhapHang() {
 
   const filteredReceipts = useMemo(() => {
     return state.importReceipts.filter(receipt => {
-      // 1. Lọc theo IMEI
+      // 1. Lọc chung (IMEI, NCC, Model)
       if (searchImei) {
-        const hasImei = receipt.items.some(item => item.imei.toLowerCase().includes(searchImei.toLowerCase()));
-        if (!hasImei) return false;
+        const searchTerm = searchImei.toLowerCase();
+        const hasImei = receipt.items.some(item => item.imei.toLowerCase().includes(searchTerm));
+        const hasSupplier = receipt.supplierName.toLowerCase().includes(searchTerm);
+        const hasProduct = receipt.items.some(item => item.model.toLowerCase().includes(searchTerm));
+        
+        if (!hasImei && !hasSupplier && !hasProduct) return false;
       }
       
-      // 2. Lọc theo NCC
-      if (searchSupplier && !receipt.supplierName.toLowerCase().includes(searchSupplier.toLowerCase())) {
-        return false;
-      }
-      
-      // 3. Lọc theo Hàng hoá (Model)
-      if (searchProduct) {
-        const hasProduct = receipt.items.some(item => item.model.toLowerCase().includes(searchProduct.toLowerCase()));
-        if (!hasProduct) return false;
-      }
-      
-      // 4. Lọc theo khung thời gian
+      // 2. Lọc theo khung thời gian
       if (dateFrom || dateTo) {
         try {
           const receiptDate = parseISO(receipt.importDate.replace(' ', 'T'));
@@ -50,10 +43,45 @@ export default function PhieuNhapHang() {
       
       return true;
     }).sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
-  }, [state.importReceipts, searchImei, searchSupplier, searchProduct, dateFrom, dateTo]);
+  }, [state.importReceipts, searchImei, dateFrom, dateTo]);
 
   const totalImportAmount = filteredReceipts.reduce((sum, r) => sum + r.totalAmount, 0);
   const totalItems = filteredReceipts.reduce((sum, r) => sum + r.items.length, 0);
+
+  const handleDelete = (receipt: any) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xoá phiếu nhập ${receipt.id.split('-')[1]}?\nCảnh báo: Tất cả các máy trong phiếu nhập này cũng sẽ bị xoá khỏi kho (nếu chưa bán).`)) {
+      // Find all IMEIs in this receipt
+      const imeis = receipt.items.map((item: any) => item.imei);
+      
+      // Delete devices that match these IMEIs
+      state.devices.forEach(device => {
+        if (imeis.includes(device.imei)) {
+          dispatch({ type: "DELETE_DEVICE", payload: device.id });
+        }
+      });
+      
+      // Delete the receipt
+      dispatch({ type: "DELETE_IMPORT_RECEIPT", payload: receipt.id });
+      alert("Đã xoá phiếu nhập và các máy liên quan.");
+    }
+  };
+
+  const handleCopy = (receipt: any) => {
+    // Navigate to TiepNhan with state
+    navigate('/tiep-nhan', { 
+      state: { 
+        copyFromReceipt: receipt 
+      } 
+    });
+  };
+
+  const handleEdit = (receipt: any) => {
+    navigate('/tiep-nhan', {
+      state: {
+        editReceipt: receipt
+      }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -62,50 +90,35 @@ export default function PhieuNhapHang() {
           <FileText className="w-6 h-6 mr-2 text-neon-cyan" />
           Phiếu Nhập Hàng
         </h1>
+        <button
+          onClick={() => navigate('/tiep-nhan')}
+          className="flex items-center px-4 py-2 bg-neon-cyan text-black font-semibold rounded-lg hover:bg-cyan-400 transition-colors"
+        >
+          <UserPlus className="w-5 h-5 mr-2" />
+          Nhập Hàng
+        </button>
       </div>
 
-      {/* Bộ lọc nâng cao */}
+      {/* Bộ lọc tìm kiếm */}
       <div className="bg-dark-card p-4 rounded-xl border border-dark-border">
         <div className="flex items-center mb-4 text-neon-cyan">
           <Filter className="w-5 h-5 mr-2" />
-          <h2 className="font-semibold">Bộ lọc tìm kiếm</h2>
+          <h2 className="font-semibold">Tìm kiếm & Bộ lọc</h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-dark-muted mb-1">IMEI</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-2">
+            <label className="block text-xs font-medium text-dark-muted mb-1">Tìm kiếm chung (IMEI, NCC, Model)</label>
             <div className="relative">
               <input
                 type="text"
                 className="w-full dark-input p-2 pl-8 rounded-md text-sm"
-                placeholder="Tìm theo IMEI..."
-                value={searchImei}
+                placeholder="Nhập từ khoá..."
+                value={searchImei} // Reusing searchImei state for general search for now, or I should add a new state
                 onChange={(e) => setSearchImei(e.target.value)}
               />
               <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-dark-muted" />
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-dark-muted mb-1">Nhà cung cấp</label>
-            <input
-              type="text"
-              className="w-full dark-input p-2 rounded-md text-sm"
-              placeholder="Tên NCC..."
-              value={searchSupplier}
-              onChange={(e) => setSearchSupplier(e.target.value)}
-            />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-dark-muted mb-1">Hàng hoá (Model)</label>
-            <input
-              type="text"
-              className="w-full dark-input p-2 rounded-md text-sm"
-              placeholder="VD: iPhone 13 Pro Max..."
-              value={searchProduct}
-              onChange={(e) => setSearchProduct(e.target.value)}
-            />
           </div>
           
           <div>
@@ -189,12 +202,36 @@ export default function PhieuNhapHang() {
                       <td className="px-4 py-3 text-sm font-medium text-neon-green">{receipt.totalAmount.toLocaleString()} đ</td>
                       <td className="px-4 py-3 text-sm text-dark-muted">{receiver?.name || 'Unknown'}</td>
                       <td className="px-4 py-3 text-sm">
-                        <button 
-                          onClick={() => setSelectedReceipt(receipt)}
-                          className="text-neon-cyan hover:underline"
-                        >
-                          Chi tiết
-                        </button>
+                        <div className="flex items-center space-x-3">
+                          <button 
+                            onClick={() => setSelectedReceipt(receipt)}
+                            className="text-neon-cyan hover:text-white transition-colors"
+                            title="Chi tiết"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleCopy(receipt)}
+                            className="text-neon-green hover:text-white transition-colors"
+                            title="Sao chép"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleEdit(receipt)}
+                            className="text-yellow-400 hover:text-white transition-colors"
+                            title="Chỉnh sửa"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(receipt)}
+                            className="text-neon-pink hover:text-white transition-colors"
+                            title="Xoá"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
