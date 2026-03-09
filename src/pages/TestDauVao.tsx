@@ -97,6 +97,7 @@ export default function TestDauVao() {
       ...selectedDevice,
       status: conclusion as any,
       appearance,
+      testResults,
       notes: `${selectedDevice.notes}\n\n[TEST ĐẦU VÀO]: ${notes}`,
     };
 
@@ -111,6 +112,7 @@ export default function TestDauVao() {
       ...selectedDevice,
       status: "CHO_TRA_NCC" as any,
       appearance,
+      testResults,
       notes: `${selectedDevice.notes}\n\n[TEST ĐẦU VÀO - BACK NCC]: ${notes}`,
     };
 
@@ -214,14 +216,57 @@ export default function TestDauVao() {
                   <h2 className="text-xl font-bold text-dark-text">Chi tiết máy: {selectedHistoryDevice.model}</h2>
                   <button onClick={() => setSelectedHistoryDevice(null)} className="text-dark-muted hover:text-neon-pink"><XCircle /></button>
                 </div>
-                <div className="space-y-4">
-                  <p><strong>IMEI:</strong> {selectedHistoryDevice.imei}</p>
-                  <p><strong>Ghi chú:</strong> {selectedHistoryDevice.notes}</p>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-dark-muted mb-1">IMEI</p>
+                      <p className="font-mono text-dark-text">{selectedHistoryDevice.imei}</p>
+                    </div>
+                    <div>
+                      <p className="text-dark-muted mb-1">Trạng thái</p>
+                      <p className="font-medium text-neon-cyan">{selectedHistoryDevice.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-dark-muted mb-1">Ngoại hình</p>
+                      <p className="font-medium text-dark-text">{selectedHistoryDevice.appearance || 'Không rõ'}</p>
+                    </div>
+                    <div>
+                      <p className="text-dark-muted mb-1">Nguồn gốc</p>
+                      <p className="font-medium text-dark-text">{selectedHistoryDevice.source}</p>
+                    </div>
+                  </div>
+
+                  {selectedHistoryDevice.testResults && (
+                    <div>
+                      <h3 className="text-sm font-medium text-neon-cyan mb-3 border-b border-dark-border pb-2">Kết quả Test</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {CHECKLIST_ITEMS.map(item => {
+                          const result = selectedHistoryDevice.testResults?.[item.id] || 'UNTESTED';
+                          return (
+                            <div key={item.id} className="flex justify-between items-center bg-dark-bg p-2 rounded border border-dark-border">
+                              <span className="text-sm text-dark-text">{item.label}</span>
+                              {result === 'OK' && <span className="text-xs font-bold text-neon-green px-2 py-1 bg-neon-green/10 rounded flex items-center"><CheckCircle className="w-3 h-3 mr-1"/> OK</span>}
+                              {result === 'FAIL' && <span className="text-xs font-bold text-neon-pink px-2 py-1 bg-neon-pink/10 rounded flex items-center"><AlertCircle className="w-3 h-3 mr-1"/> Lỗi</span>}
+                              {result === 'UNTESTED' && <span className="text-xs font-bold text-gray-400 px-2 py-1 bg-gray-500/10 rounded flex items-center"><HelpCircle className="w-3 h-3 mr-1"/> Chưa test</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-sm font-medium text-neon-cyan mb-2 border-b border-dark-border pb-2">Ghi chú</h3>
+                    <div className="bg-dark-bg p-3 rounded border border-dark-border text-sm text-dark-text whitespace-pre-wrap">
+                      {selectedHistoryDevice.notes || 'Không có ghi chú'}
+                    </div>
+                  </div>
+
                   {selectedHistoryDevice.images && selectedHistoryDevice.images.length > 0 && (
                     <div>
-                      <p className="font-medium text-neon-cyan mb-2">Ảnh tình trạng:</p>
+                      <h3 className="text-sm font-medium text-neon-cyan mb-2 border-b border-dark-border pb-2">Ảnh tình trạng</h3>
                       <div className="flex flex-wrap gap-2">
-                        {selectedHistoryDevice.images.map((img, idx) => <img key={idx} src={img} className="w-20 h-20 object-cover rounded" />)}
+                        {selectedHistoryDevice.images.map((img, idx) => <img key={idx} src={img} className="w-24 h-24 object-cover rounded border border-dark-border" />)}
                       </div>
                     </div>
                   )}

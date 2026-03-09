@@ -53,6 +53,7 @@ export interface Device {
   notes: string;
   images: string[];
   appearance?: 'LN' | '99%' | '98%';
+  testResults?: Record<string, "OK" | "FAIL" | "UNTESTED">;
   receptionType?: 'IMPORT' | 'SHOP_TRANSFER' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN';
   customerPhone?: string;
   receptionDate?: string;
