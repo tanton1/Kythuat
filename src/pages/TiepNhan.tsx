@@ -22,13 +22,12 @@ export default function TiepNhan() {
   const [activeTab, setActiveTab] = useState<'IMPORT' | 'SHOP' | 'WARRANTY' | 'SERVICE' | 'TRADE_IN'>('IMPORT');
   const [searchImei, setSearchImei] = useState("");
   const [foundDevice, setFoundDevice] = useState<Device | null>(null);
-  const [imeiList, setImeiList] = useState<string[]>([]);
+  const [imeiList, setImeiList] = useState<{ imei: string, images: string[] }[]>([]);
   const [currentImei, setCurrentImei] = useState("");
 
   const uniqueModels: string[] = Array.from(new Set(state.products.map(p => p.model))).filter((m): m is string => !!m).sort();
 
   const [formData, setFormData] = useState<Partial<Device>>({
-    imei: "",
     model: "",
     color: "",
     capacity: "",
@@ -39,17 +38,51 @@ export default function TiepNhan() {
     importPrice: 0,
   });
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, imei: string) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newImages: string[] = [];
+    Array.from(files).forEach((file: File) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newImages.push(reader.result as string);
+        if (newImages.length === files.length) {
+          setImeiList(prev => prev.map(item => 
+            item.imei === imei ? { ...item, images: [...item.images, ...newImages] } : item
+          ));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number, imei: string) => {
+    setImeiList(prev => prev.map(item => 
+      item.imei === imei ? { ...item, images: item.images.filter((_, i) => i !== index) } : item
+    ));
+  };
+
   const handleSearch = () => {
     const device = state.devices.find(d => d.imei === searchImei);
     if (device) {
+      if (imeiList.find(i => i.imei === device.imei)) {
+        alert("IMEI này đã có trong danh sách");
+        return;
+      }
+      setImeiList([...imeiList, { imei: device.imei, images: device.images || [] }]);
       setFoundDevice(device);
       setFormData({
-        ...device,
-        notes: "", // Clear notes for new reception
+        ...formData,
+        model: device.model,
+        color: device.color,
+        capacity: device.capacity,
+        source: device.source,
+        importPrice: device.importPrice,
       });
+      setSearchImei("");
     } else {
-      setFoundDevice(null);
-      alert("Không tìm thấy máy trong hệ thống. Vui lòng nhập mới.");
+      alert("Không tìm thấy máy trong hệ thống.");
     }
   };
 
@@ -64,16 +97,14 @@ export default function TiepNhan() {
     const status: DeviceStatus = activeTab === 'SERVICE' ? 'CHO_PHAN_TASK' : 
                                 activeTab === 'TRADE_IN' ? 'TRADE_IN' : 'CHO_TEST';
 
-    const imeisToProcess = activeTab === 'IMPORT' ? imeiList : [formData.imei || ""];
-
-    if (imeisToProcess.length === 0 && activeTab === 'IMPORT') {
+    if (imeiList.length === 0) {
       return alert("Vui lòng nhập ít nhất 1 IMEI");
     }
 
-    imeisToProcess.forEach(imei => {
+    imeiList.forEach(item => {
       const newDevice: Device = {
-        id: (activeTab !== 'IMPORT' && foundDevice?.id) || `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        imei: imei,
+        id: `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        imei: item.imei,
         model: formData.model || "",
         color: formData.color || "",
         capacity: formData.capacity || "",
@@ -84,22 +115,18 @@ export default function TiepNhan() {
         receiverId: state.currentUser!.id,
         status,
         notes: formData.notes || "",
-        images: foundDevice?.images || [],
+        images: item.images,
         receptionType,
         customerInfo: formData.customerInfo,
         customerPhone: formData.customerPhone,
         receptionDate: format(new Date(), "yyyy-MM-dd HH:mm"),
       };
 
-      if (activeTab !== 'IMPORT' && foundDevice) {
-        dispatch({ type: "UPDATE_DEVICE", payload: newDevice });
-      } else {
-        dispatch({ type: "ADD_DEVICE", payload: newDevice });
-      }
+      dispatch({ type: "ADD_DEVICE", payload: newDevice });
     });
 
     // Reset form
-    setFormData({ imei: "", model: "", color: "", capacity: "", source: "", notes: "", customerInfo: "", customerPhone: "", importPrice: 0 });
+    setFormData({ model: "", color: "", capacity: "", source: "", notes: "", customerInfo: "", customerPhone: "", importPrice: 0 });
     setFoundDevice(null);
     setSearchImei("");
     setImeiList([]);
@@ -111,11 +138,11 @@ export default function TiepNhan() {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!currentImei.trim()) return;
-      if (imeiList.includes(currentImei.trim())) {
+      if (imeiList.find(i => i.imei === currentImei.trim())) {
         alert("IMEI này đã có trong danh sách");
         return;
       }
-      setImeiList([...imeiList, currentImei.trim()]);
+      setImeiList([...imeiList, { imei: currentImei.trim(), images: [] }]);
       setCurrentImei("");
     }
   };
@@ -177,64 +204,75 @@ export default function TiepNhan() {
               Thông Tin Thiết Bị
             </h3>
             
-            {(activeTab === 'WARRANTY' || activeTab === 'SERVICE' || activeTab === 'TRADE_IN') && (
-              <div className="mb-6 p-4 bg-dark-bg rounded-lg border border-dark-border">
-                <label className="block text-sm font-medium text-dark-muted mb-2">Tra cứu IMEI (Nếu đã có trong hệ thống)</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    className="flex-1 dark-input p-2 rounded-md"
-                    placeholder="Nhập IMEI để kiểm tra lịch sử..."
-                    value={searchImei}
-                    onChange={(e) => setSearchImei(e.target.value)}
-                  />
-                  <button 
-                    onClick={handleSearch}
-                    className="px-4 py-2 bg-dark-border text-dark-text rounded-md hover:bg-dark-border/80 flex items-center"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Kiểm tra
-                  </button>
-                </div>
+            <div className="mb-6 p-4 bg-dark-bg rounded-lg border border-dark-border">
+              <label className="block text-sm font-medium text-dark-muted mb-2">Tra cứu IMEI (Nếu đã có trong hệ thống)</label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  className="flex-1 dark-input p-2 rounded-md"
+                  placeholder="Nhập IMEI để kiểm tra lịch sử..."
+                  value={searchImei}
+                  onChange={(e) => setSearchImei(e.target.value)}
+                />
+                <button 
+                  onClick={handleSearch}
+                  className="px-4 py-2 bg-dark-border text-dark-text rounded-md hover:bg-dark-border/80 flex items-center"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Kiểm tra
+                </button>
               </div>
-            )}
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-dark-muted">
-                    {activeTab === 'IMPORT' ? 'Nhập IMEI (Nhấn Enter để thêm nhiều máy)' : 'IMEI/Serial *'}
+                    Nhập IMEI (Nhấn Enter để thêm nhiều máy)
                   </label>
-                  {activeTab === 'IMPORT' ? (
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
-                        placeholder="Nhập IMEI và nhấn Enter..."
-                        value={currentImei}
-                        onChange={(e) => setCurrentImei(e.target.value)}
-                        onKeyDown={handleAddImei}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        {imeiList.map((imei, idx) => (
-                          <span key={idx} className="flex items-center px-2 py-1 bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 rounded text-sm">
-                            {imei}
-                            <button type="button" onClick={() => removeImei(idx)} className="ml-2 text-neon-pink hover:text-neon-pink/80">
-                              <XCircle className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
+                  <div className="space-y-2">
                     <input
-                      type="text" required
+                      type="text"
                       className="mt-1 block w-full dark-input p-2 rounded-md text-lg font-mono tracking-wider"
-                      placeholder="Nhập IMEI hoặc Serial máy..."
-                      value={formData.imei}
-                      onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                      placeholder="Nhập IMEI và nhấn Enter..."
+                      value={currentImei}
+                      onChange={(e) => setCurrentImei(e.target.value)}
+                      onKeyDown={handleAddImei}
                     />
-                  )}
+                    <div className="grid grid-cols-1 gap-2">
+                      {imeiList.map((item, idx) => (
+                        <div key={idx} className="p-2 bg-dark-bg border border-dark-border rounded-md">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-mono text-neon-cyan">{item.imei}</span>
+                            <button type="button" onClick={() => removeImei(idx)} className="text-neon-pink hover:text-neon-pink/80">
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, item.imei)}
+                            className="block w-full text-sm text-dark-muted file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-neon-cyan/10 file:text-neon-cyan hover:file:bg-neon-cyan/20"
+                          />
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {item.images.map((img, imgIdx) => (
+                              <div key={imgIdx} className="relative">
+                                <img src={img} alt="Preview" className="w-12 h-12 object-cover rounded-md" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(imgIdx, item.imei)}
+                                  className="absolute -top-1 -right-1 bg-neon-pink text-white rounded-full p-0.5 hover:bg-neon-pink/80"
+                                >
+                                  <XCircle className="w-2 h-2" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <SearchableSelect
