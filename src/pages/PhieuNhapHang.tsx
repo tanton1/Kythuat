@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useAppContext } from "../store/AppContext";
 import { Search, Filter, FileText, Calendar, DollarSign, Package, User, Store, Copy, Edit, Trash2, UserPlus } from "lucide-react";
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 export default function PhieuNhapHang() {
@@ -9,39 +9,58 @@ export default function PhieuNhapHang() {
   const navigate = useNavigate();
   
   const [searchImei, setSearchImei] = useState("");
+  const [dateRangeType, setDateRangeType] = useState("this_month");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [activeSource, setActiveSource] = useState('Tất cả');
+  const [activeSource, setActiveSource] = useState('ALL');
+  const [selectedNcc, setSelectedNcc] = useState('Tất cả');
   
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
 
-  const PREDEFINED_SOURCES = [
-    'Nguồn thu cũ',
-    'Nguồn shop chuyển lên',
-    'Nguồn bảo hành',
-    'Nguồn khách lẻ'
+  const TABS = [
+    { id: 'ALL', label: 'Tất cả' },
+    { id: 'NEW', label: 'Nhập Máy Mới' },
+    { id: 'SHOP', label: 'Nhận từ Shop' },
+    { id: 'TRADE_IN', label: 'Thu Cũ' },
+    { id: 'WARRANTY', label: 'Bảo Hành' },
+    { id: 'SERVICE', label: 'Sửa Lẻ' }
   ];
 
-  const suppliers = useMemo(() => {
+  const newSuppliers = useMemo(() => {
     const s = new Set<string>();
-    PREDEFINED_SOURCES.forEach(src => s.add(src));
     state.importReceipts.forEach(r => {
-      // Don't add dynamically if it's one of the predefined sources or starts with shop transfer
-      if (!PREDEFINED_SOURCES.includes(r.supplierName) && !r.supplierName.startsWith('Nguồn shop chuyển lên')) {
+      if (
+        r.supplierName !== 'Nguồn thu cũ' &&
+        r.supplierName !== 'Nguồn bảo hành' &&
+        r.supplierName !== 'Nguồn khách lẻ' &&
+        !r.supplierName.startsWith('Nguồn shop chuyển lên')
+      ) {
         s.add(r.supplierName);
       }
     });
-    return ['Tất cả', ...Array.from(s)];
+    return Array.from(s);
   }, [state.importReceipts]);
 
   const filteredReceipts = useMemo(() => {
     return state.importReceipts.filter(receipt => {
       // 1. Lọc theo nguồn nhập
-      if (activeSource !== 'Tất cả') {
-        if (activeSource === 'Nguồn shop chuyển lên') {
+      if (activeSource !== 'ALL') {
+        if (activeSource === 'SHOP') {
           if (!receipt.supplierName.startsWith('Nguồn shop chuyển lên')) return false;
-        } else {
-          if (receipt.supplierName !== activeSource) return false;
+        } else if (activeSource === 'TRADE_IN') {
+          if (receipt.supplierName !== 'Nguồn thu cũ') return false;
+        } else if (activeSource === 'WARRANTY') {
+          if (receipt.supplierName !== 'Nguồn bảo hành') return false;
+        } else if (activeSource === 'SERVICE') {
+          if (receipt.supplierName !== 'Nguồn khách lẻ') return false;
+        } else if (activeSource === 'NEW') {
+          const isPredefined = receipt.supplierName === 'Nguồn thu cũ' ||
+                               receipt.supplierName === 'Nguồn bảo hành' ||
+                               receipt.supplierName === 'Nguồn khách lẻ' ||
+                               receipt.supplierName.startsWith('Nguồn shop chuyển lên');
+          if (isPredefined) return false;
+          
+          if (selectedNcc !== 'Tất cả' && receipt.supplierName !== selectedNcc) return false;
         }
       }
 
@@ -61,23 +80,44 @@ export default function PhieuNhapHang() {
       }
       
       // 3. Lọc theo khung thời gian
-      if (dateFrom || dateTo) {
-        try {
-          const receiptDate = parseISO(receipt.importDate.replace(' ', 'T'));
-          const start = dateFrom ? startOfDay(new Date(dateFrom)) : new Date(0);
-          const end = dateTo ? endOfDay(new Date(dateTo)) : new Date(8640000000000000);
-          
-          if (!isWithinInterval(receiptDate, { start, end })) {
-            return false;
-          }
-        } catch (e) {
-          // Fallback if date parsing fails
+      let start = new Date(0);
+      let end = new Date(8640000000000000);
+      const today = new Date();
+
+      if (dateRangeType === 'today') {
+        start = startOfDay(today);
+        end = endOfDay(today);
+      } else if (dateRangeType === 'yesterday') {
+        const yesterday = subDays(today, 1);
+        start = startOfDay(yesterday);
+        end = endOfDay(yesterday);
+      } else if (dateRangeType === 'this_week') {
+        start = startOfWeek(today, { weekStartsOn: 1 });
+        end = endOfWeek(today, { weekStartsOn: 1 });
+      } else if (dateRangeType === 'this_month') {
+        start = startOfMonth(today);
+        end = endOfMonth(today);
+      } else if (dateRangeType === 'last_month') {
+        const lastMonth = subMonths(today, 1);
+        start = startOfMonth(lastMonth);
+        end = endOfMonth(lastMonth);
+      } else if (dateRangeType === 'custom') {
+        start = dateFrom ? startOfDay(new Date(dateFrom)) : new Date(0);
+        end = dateTo ? endOfDay(new Date(dateTo)) : new Date(8640000000000000);
+      }
+
+      try {
+        const receiptDate = parseISO(receipt.importDate.replace(' ', 'T'));
+        if (!isWithinInterval(receiptDate, { start, end })) {
+          return false;
         }
+      } catch (e) {
+        // Fallback if date parsing fails
       }
       
       return true;
     }).sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
-  }, [state.importReceipts, searchImei, dateFrom, dateTo, activeSource]);
+  }, [state.importReceipts, searchImei, dateRangeType, dateFrom, dateTo, activeSource, selectedNcc]);
 
   const totalImportAmount = filteredReceipts.reduce((sum, r) => sum + r.totalAmount, 0);
   const totalItems = filteredReceipts.reduce((sum, r) => sum + r.items.length, 0);
@@ -134,16 +174,41 @@ export default function PhieuNhapHang() {
       </div>
 
       {/* Tabs theo nguồn nhập */}
-      <div className="flex space-x-2 overflow-x-auto pb-2">
-        {suppliers.map(source => (
-          <button
-            key={source}
-            onClick={() => setActiveSource(source)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${activeSource === source ? 'bg-neon-cyan text-black' : 'bg-dark-card text-dark-muted hover:text-dark-text'}`}
-          >
-            {source}
-          </button>
-        ))}
+      <div className="flex flex-col space-y-2">
+        <div className="flex space-x-2 overflow-x-auto pb-2">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveSource(tab.id);
+                if (tab.id !== 'NEW') setSelectedNcc('Tất cả');
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${activeSource === tab.id ? 'bg-neon-cyan text-black' : 'bg-dark-card text-dark-muted hover:text-dark-text'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        
+        {activeSource === 'NEW' && newSuppliers.length > 0 && (
+          <div className="flex space-x-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedNcc('Tất cả')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${selectedNcc === 'Tất cả' ? 'bg-dark-border text-white' : 'bg-dark-bg text-dark-muted hover:text-dark-text border border-dark-border'}`}
+            >
+              Tất cả NCC
+            </button>
+            {newSuppliers.map(ncc => (
+              <button
+                key={ncc}
+                onClick={() => setSelectedNcc(ncc)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${selectedNcc === ncc ? 'bg-dark-border text-white' : 'bg-dark-bg text-dark-muted hover:text-dark-text border border-dark-border'}`}
+              >
+                {ncc}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Bộ lọc tìm kiếm */}
@@ -169,24 +234,44 @@ export default function PhieuNhapHang() {
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-dark-muted mb-1">Từ ngày</label>
-            <input
-              type="date"
+            <label className="block text-xs font-medium text-dark-muted mb-1">Thời gian</label>
+            <select
               className="w-full dark-input p-2 rounded-md text-sm"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
+              value={dateRangeType}
+              onChange={(e) => setDateRangeType(e.target.value)}
+            >
+              <option value="today">Hôm nay</option>
+              <option value="yesterday">Hôm qua</option>
+              <option value="this_week">Tuần này</option>
+              <option value="this_month">Tháng này</option>
+              <option value="last_month">Tháng trước</option>
+              <option value="custom">Tuỳ chỉnh</option>
+              <option value="all">Tất cả thời gian</option>
+            </select>
           </div>
           
-          <div>
-            <label className="block text-xs font-medium text-dark-muted mb-1">Đến ngày</label>
-            <input
-              type="date"
-              className="w-full dark-input p-2 rounded-md text-sm"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
+          {dateRangeType === 'custom' && (
+            <div className="flex space-x-2">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-dark-muted mb-1">Từ ngày</label>
+                <input
+                  type="date"
+                  className="w-full dark-input p-2 rounded-md text-sm"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-dark-muted mb-1">Đến ngày</label>
+                <input
+                  type="date"
+                  className="w-full dark-input p-2 rounded-md text-sm"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
