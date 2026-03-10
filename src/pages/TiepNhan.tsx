@@ -162,14 +162,18 @@ export default function TiepNhan() {
     imeiList.forEach(item => {
       const importPrice = activeTab === 'TRADE_IN' || activeTab === 'IMPORT' ? Number(formData.importPrice) || 0 : foundDevice?.importPrice || 0;
       
+      const sourceName = activeTab === 'IMPORT' ? formData.source || "" : 
+                         activeTab === 'SHOP' ? `Nguồn shop chuyển lên - ${formData.source}` :
+                         activeTab === 'TRADE_IN' ? "Nguồn thu cũ" : 
+                         activeTab === 'WARRANTY' ? "Nguồn bảo hành" : "Nguồn khách lẻ";
+
       const newDevice: Device = {
         id: `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         imei: item.imei,
         model: formData.model || "",
         color: formData.color || "",
         capacity: formData.capacity || "",
-        source: activeTab === 'IMPORT' || activeTab === 'SHOP' ? formData.source || "" : 
-                activeTab === 'TRADE_IN' ? "Khách thu cũ (Trade-in)" : "Khách Lẻ",
+        source: sourceName,
         importPrice,
         importDate: foundDevice?.importDate || format(new Date(), "yyyy-MM-dd HH:mm"),
         receiverId: state.currentUser!.id,
@@ -184,24 +188,27 @@ export default function TiepNhan() {
 
       dispatch({ type: "ADD_DEVICE", payload: newDevice });
 
-      if (activeTab === 'IMPORT') {
-        importItems.push({
-          imei: item.imei,
-          model: formData.model || "",
-          color: formData.color || "",
-          capacity: formData.capacity || "",
-          importPrice,
-        });
-        totalAmount += importPrice;
-      }
+      importItems.push({
+        imei: item.imei,
+        model: formData.model || "",
+        color: formData.color || "",
+        capacity: formData.capacity || "",
+        importPrice,
+      });
+      totalAmount += importPrice;
     });
 
-    if (activeTab === 'IMPORT' && importItems.length > 0) {
+    if (importItems.length > 0) {
+      const sourceName = activeTab === 'IMPORT' ? formData.source || "Không rõ" : 
+                         activeTab === 'SHOP' ? `Nguồn shop chuyển lên - ${formData.source}` :
+                         activeTab === 'TRADE_IN' ? "Nguồn thu cũ" : 
+                         activeTab === 'WARRANTY' ? "Nguồn bảo hành" : "Nguồn khách lẻ";
+
       if (isEditing && editingReceiptId) {
         // Update existing receipt
         const updatedReceipt = {
           id: editingReceiptId,
-          supplierName: formData.source || "Không rõ",
+          supplierName: sourceName,
           importDate: format(new Date(), "yyyy-MM-dd HH:mm"), // Keep original date or update? Updating for now.
           totalAmount,
           notes: formData.notes || "",
@@ -209,15 +216,11 @@ export default function TiepNhan() {
           receiverId: state.currentUser!.id,
         };
         dispatch({ type: "UPDATE_IMPORT_RECEIPT", payload: updatedReceipt });
-        
-        // Note: Updating devices associated with the receipt is complex because IMEIs might have changed,
-        // devices might have been sold, etc. For simplicity in this edit flow, we are just updating the receipt record.
-        // A full implementation would need to reconcile the old items with the new items and update/create/delete devices accordingly.
       } else {
         // Create new receipt
         const newImportReceipt = {
           id: `ir-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          supplierName: formData.source || "Không rõ",
+          supplierName: sourceName,
           importDate: format(new Date(), "yyyy-MM-dd HH:mm"),
           totalAmount,
           notes: formData.notes || "",

@@ -11,22 +11,56 @@ export default function PhieuNhapHang() {
   const [searchImei, setSearchImei] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [activeSource, setActiveSource] = useState('Tất cả');
   
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
 
+  const PREDEFINED_SOURCES = [
+    'Nguồn thu cũ',
+    'Nguồn shop chuyển lên',
+    'Nguồn bảo hành',
+    'Nguồn khách lẻ'
+  ];
+
+  const suppliers = useMemo(() => {
+    const s = new Set<string>();
+    PREDEFINED_SOURCES.forEach(src => s.add(src));
+    state.importReceipts.forEach(r => {
+      // Don't add dynamically if it's one of the predefined sources or starts with shop transfer
+      if (!PREDEFINED_SOURCES.includes(r.supplierName) && !r.supplierName.startsWith('Nguồn shop chuyển lên')) {
+        s.add(r.supplierName);
+      }
+    });
+    return ['Tất cả', ...Array.from(s)];
+  }, [state.importReceipts]);
+
   const filteredReceipts = useMemo(() => {
     return state.importReceipts.filter(receipt => {
-      // 1. Lọc chung (IMEI, NCC, Model)
+      // 1. Lọc theo nguồn nhập
+      if (activeSource !== 'Tất cả') {
+        if (activeSource === 'Nguồn shop chuyển lên') {
+          if (!receipt.supplierName.startsWith('Nguồn shop chuyển lên')) return false;
+        } else {
+          if (receipt.supplierName !== activeSource) return false;
+        }
+      }
+
+      // 2. Lọc chung (IMEI, NCC, Model, Mã phiếu, Người nhập, Ghi chú)
       if (searchImei) {
         const searchTerm = searchImei.toLowerCase();
         const hasImei = receipt.items.some(item => item.imei.toLowerCase().includes(searchTerm));
         const hasSupplier = receipt.supplierName.toLowerCase().includes(searchTerm);
         const hasProduct = receipt.items.some(item => item.model.toLowerCase().includes(searchTerm));
+        const hasReceiptId = receipt.id.toLowerCase().includes(searchTerm);
+        const hasNotes = receipt.notes?.toLowerCase().includes(searchTerm);
         
-        if (!hasImei && !hasSupplier && !hasProduct) return false;
+        const receiver = state.users.find(u => u.id === receipt.receiverId);
+        const hasReceiver = receiver?.name.toLowerCase().includes(searchTerm);
+        
+        if (!hasImei && !hasSupplier && !hasProduct && !hasReceiptId && !hasNotes && !hasReceiver) return false;
       }
       
-      // 2. Lọc theo khung thời gian
+      // 3. Lọc theo khung thời gian
       if (dateFrom || dateTo) {
         try {
           const receiptDate = parseISO(receipt.importDate.replace(' ', 'T'));
@@ -43,7 +77,7 @@ export default function PhieuNhapHang() {
       
       return true;
     }).sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
-  }, [state.importReceipts, searchImei, dateFrom, dateTo]);
+  }, [state.importReceipts, searchImei, dateFrom, dateTo, activeSource]);
 
   const totalImportAmount = filteredReceipts.reduce((sum, r) => sum + r.totalAmount, 0);
   const totalItems = filteredReceipts.reduce((sum, r) => sum + r.items.length, 0);
@@ -99,6 +133,19 @@ export default function PhieuNhapHang() {
         </button>
       </div>
 
+      {/* Tabs theo nguồn nhập */}
+      <div className="flex space-x-2 overflow-x-auto pb-2">
+        {suppliers.map(source => (
+          <button
+            key={source}
+            onClick={() => setActiveSource(source)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${activeSource === source ? 'bg-neon-cyan text-black' : 'bg-dark-card text-dark-muted hover:text-dark-text'}`}
+          >
+            {source}
+          </button>
+        ))}
+      </div>
+
       {/* Bộ lọc tìm kiếm */}
       <div className="bg-dark-card p-4 rounded-xl border border-dark-border">
         <div className="flex items-center mb-4 text-neon-cyan">
@@ -108,7 +155,7 @@ export default function PhieuNhapHang() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
-            <label className="block text-xs font-medium text-dark-muted mb-1">Tìm kiếm chung (IMEI, NCC, Model)</label>
+            <label className="block text-xs font-medium text-dark-muted mb-1">Tìm kiếm chung (Mã phiếu, IMEI, NCC, Model, Người nhập...)</label>
             <div className="relative">
               <input
                 type="text"
