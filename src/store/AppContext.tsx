@@ -263,14 +263,19 @@ const appReducer = (state: AppState, action: Action): AppState => {
     }
     case "ADD_USER":
       return { ...state, users: [...state.users, action.payload] };
-    case "UPDATE_USER":
+    case "UPDATE_USER": {
+      const updatedCurrentUser = state.currentUser?.id === action.payload.id ? action.payload : state.currentUser;
+      if (updatedCurrentUser && state.currentUser?.id === action.payload.id) {
+        localStorage.setItem("phonehouse_user", JSON.stringify(updatedCurrentUser));
+      }
       return {
         ...state,
         users: state.users.map((u) =>
           u.id === action.payload.id ? action.payload : u,
         ),
-        currentUser: state.currentUser?.id === action.payload.id ? action.payload : state.currentUser
+        currentUser: updatedCurrentUser
       };
+    }
     case "DELETE_USER":
       return {
         ...state,
@@ -322,8 +327,17 @@ const appReducer = (state: AppState, action: Action): AppState => {
         ...state,
         notifications: state.notifications.filter((n) => n.id !== action.payload),
       };
-    case "SET_FULL_STATE":
-      return { ...state, ...action.payload };
+    case "SET_FULL_STATE": {
+      const newState = { ...state, ...action.payload };
+      if (action.payload.users && state.currentUser) {
+        const updatedUser = action.payload.users.find((u: User) => u.id === state.currentUser!.id);
+        if (updatedUser) {
+          newState.currentUser = updatedUser;
+          localStorage.setItem("phonehouse_user", JSON.stringify(updatedUser));
+        }
+      }
+      return newState;
+    }
     default:
       return state;
   }
@@ -468,7 +482,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           await deleteDoc(doc(db, 'notifications', action.payload));
           break;
         case 'ADD_IMPORT_RECEIPT':
+        case 'UPDATE_IMPORT_RECEIPT':
           await setDoc(doc(db, 'importReceipts', action.payload.id), action.payload);
+          break;
+        case 'DELETE_IMPORT_RECEIPT':
+          await deleteDoc(doc(db, 'importReceipts', action.payload));
           break;
         case 'UPDATE_PART_STOCK': {
           const part = stateRef.current.parts.find(p => p.id === action.payload.partId);
