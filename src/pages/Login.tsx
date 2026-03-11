@@ -19,7 +19,10 @@ export default function Login() {
     setTimeout(() => {
       const user = state.users.find((u) => u.email === email);
       
-      if (user && user.password === password) {
+      // If user exists but has no password set, allow login with default password '123456'
+      const isPasswordValid = user && (user.password === password || (!user.password && password === '123456'));
+
+      if (user && isPasswordValid) {
         dispatch({ type: "SET_USER", payload: user });
         // Persist to localStorage
         localStorage.setItem("phonehouse_user", JSON.stringify(user));
@@ -72,7 +75,7 @@ export default function Login() {
                 />
               </div>
               <p className="text-[10px] text-dark-muted mt-1.5 ml-1">
-                Gợi ý: admin@ifix.vn, kta@ifix.vn, sale@ifix.vn
+                Gợi ý: admin@ifix.vn, kta@ifix.vn, sale@ifix.vn. Mật khẩu mặc định: 123456
               </p>
             </div>
 

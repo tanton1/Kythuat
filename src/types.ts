@@ -29,6 +29,19 @@ export type DeviceStatus =
   | "DA_TRA_NCC"
   | "DA_BAN";
 
+export type Permission = 
+  | 'VIEW_DASHBOARD'
+  | 'MANAGE_USERS'
+  | 'MANAGE_DEVICES'
+  | 'MANAGE_PARTS'
+  | 'MANAGE_TASKS'
+  | 'MANAGE_QC'
+  | 'MANAGE_SUPPLIERS'
+  | 'MANAGE_PRODUCTS'
+  | 'MANAGE_IMPORT'
+  | 'MANAGE_DISTRIBUTION'
+  | 'VIEW_REPORTS';
+
 export interface User {
   id: string;
   name: string;
@@ -37,6 +50,7 @@ export interface User {
   password?: string;
   phone?: string;
   status?: 'ACTIVE' | 'INACTIVE';
+  permissions?: Permission[];
 }
 
 export interface Device {

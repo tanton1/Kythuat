@@ -40,43 +40,43 @@ const NAV_GROUPS = [
   {
     title: "Tổng Quan",
     items: [
-      { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "TRUONG_KT"] },
+      { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "TRUONG_KT"], permissions: ["VIEW_DASHBOARD"] },
     ]
   },
   {
     title: "Quản Lý Kho",
     items: [
-      { path: "/hang-hoa", label: "Danh Mục Hàng Hóa", icon: Box, roles: ["ADMIN"] },
-      { path: "/phieu-nhap-hang", label: "Phiếu Nhập Hàng", icon: FileText, roles: ["ADMIN", "KHO_MAY"] },
-      { path: "/kho-may", label: "Kho Máy", icon: Smartphone, roles: ["ADMIN", "KHO_MAY"] },
-      { path: "/kho-linh-kien", label: "Kho Linh Kiện", icon: Package, roles: ["ADMIN", "KHO_LINH_KIEN"] },
+      { path: "/hang-hoa", label: "Danh Mục Hàng Hóa", icon: Box, roles: ["ADMIN"], permissions: ["MANAGE_PRODUCTS"] },
+      { path: "/phieu-nhap-hang", label: "Phiếu Nhập Hàng", icon: FileText, roles: ["ADMIN", "KHO_MAY"], permissions: ["MANAGE_IMPORT"] },
+      { path: "/kho-may", label: "Kho Máy", icon: Smartphone, roles: ["ADMIN", "KHO_MAY"], permissions: ["MANAGE_DEVICES"] },
+      { path: "/kho-linh-kien", label: "Kho Linh Kiện", icon: Package, roles: ["ADMIN", "KHO_LINH_KIEN"], permissions: ["MANAGE_PARTS"] },
     ]
   },
   {
     title: "Quy Trình Kỹ Thuật",
     items: [
-      { path: "/test-dau-vao", label: "Test Đầu Vào", icon: Activity, roles: ["ADMIN", "TESTER", "TRUONG_KT"] },
-      { path: "/quyet-dinh", label: "Duyệt Quyết Định", icon: ClipboardCheck, roles: ["ADMIN", "TRUONG_KT"] },
-      { path: "/dieu-phoi", label: "Điều Phối Task", icon: Settings, roles: ["ADMIN", "TRUONG_KT"] },
-      { path: "/ky-thuat", label: "Kỹ Thuật", icon: Wrench, roles: ["ADMIN", "KY_THUAT"] },
-      { path: "/qc", label: "QC & Thẩm Định", icon: ShieldCheck, roles: ["ADMIN", "QC"] },
+      { path: "/test-dau-vao", label: "Test Đầu Vào", icon: Activity, roles: ["ADMIN", "TESTER", "TRUONG_KT"], permissions: ["MANAGE_DEVICES"] },
+      { path: "/quyet-dinh", label: "Duyệt Quyết Định", icon: ClipboardCheck, roles: ["ADMIN", "TRUONG_KT"], permissions: ["MANAGE_TASKS"] },
+      { path: "/dieu-phoi", label: "Điều Phối Task", icon: Settings, roles: ["ADMIN", "TRUONG_KT"], permissions: ["MANAGE_TASKS"] },
+      { path: "/ky-thuat", label: "Kỹ Thuật", icon: Wrench, roles: ["ADMIN", "KY_THUAT"], permissions: ["MANAGE_TASKS"] },
+      { path: "/qc", label: "QC & Thẩm Định", icon: ShieldCheck, roles: ["ADMIN", "QC"], permissions: ["MANAGE_QC"] },
     ]
   },
   {
     title: "Kinh Doanh & Báo Cáo",
     items: [
-      { path: "/phan-phoi", label: "Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"] },
-      { path: "/bao-cao-ton-kho", label: "Báo Cáo Tồn Kho", icon: Table, roles: ["ADMIN", "KHO_MAY", "TRUONG_KT"] },
-      { path: "/nguon-hang", label: "Báo Cáo Theo Nguồn", icon: Truck, roles: ["ADMIN", "KHO_MAY"] },
-      { path: "/bao-cao-ty-le-loi", label: "Báo Cáo Tỷ Lệ Lỗi", icon: AlertTriangle, roles: ["ADMIN", "TRUONG_KT", "QC"] },
-      { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"] },
+      { path: "/phan-phoi", label: "Bán Hàng", icon: Store, roles: ["ADMIN", "SALE"], permissions: ["MANAGE_DISTRIBUTION"] },
+      { path: "/bao-cao-ton-kho", label: "Báo Cáo Tồn Kho", icon: Table, roles: ["ADMIN", "KHO_MAY", "TRUONG_KT"], permissions: ["VIEW_REPORTS"] },
+      { path: "/nguon-hang", label: "Báo Cáo Theo Nguồn", icon: Truck, roles: ["ADMIN", "KHO_MAY"], permissions: ["MANAGE_SUPPLIERS", "VIEW_REPORTS"] },
+      { path: "/bao-cao-ty-le-loi", label: "Báo Cáo Tỷ Lệ Lỗi", icon: AlertTriangle, roles: ["ADMIN", "TRUONG_KT", "QC"], permissions: ["VIEW_REPORTS"] },
+      { path: "/bao-cao-thu-nhap", label: "Báo Cáo Thu Nhập", icon: DollarSign, roles: ["ADMIN", "KY_THUAT"], permissions: ["VIEW_REPORTS"] },
     ]
   },
   {
     title: "Hệ Thống",
     items: [
-      { path: "/nhan-vien", label: "Nhân Sự", icon: Users, roles: ["ADMIN"] },
-      { path: "/huong-dan", label: "Hướng Dẫn", icon: BookOpen, roles: ["ADMIN", "KHO_MAY", "TESTER", "TRUONG_KT", "KY_THUAT", "KHO_LINH_KIEN", "QC", "SALE"] },
+      { path: "/nhan-vien", label: "Nhân Sự", icon: Users, roles: ["ADMIN"], permissions: ["MANAGE_USERS"] },
+      { path: "/huong-dan", label: "Hướng Dẫn", icon: BookOpen, roles: ["ADMIN", "KHO_MAY", "TESTER", "TRUONG_KT", "KY_THUAT", "KHO_LINH_KIEN", "QC", "SALE"], permissions: [] },
     ]
   }
 ];
@@ -138,7 +138,16 @@ export default function Layout() {
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
           {NAV_GROUPS.map((group, idx) => {
             const visibleItems = group.items.filter(
-              (item) => state.currentUser && item.roles.includes(state.currentUser.role)
+              (item) => {
+                if (!state.currentUser) return false;
+                if (state.currentUser.role === 'ADMIN') return true;
+                if (item.permissions && item.permissions.length > 0) {
+                  const userPermissions = state.currentUser.permissions || [];
+                  const hasPermission = item.permissions.some(p => userPermissions.includes(p as any));
+                  if (hasPermission) return true;
+                }
+                return item.roles.includes(state.currentUser.role);
+              }
             );
 
             if (visibleItems.length === 0) return null;

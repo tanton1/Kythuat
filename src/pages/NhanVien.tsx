@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { User, Role } from '../types';
-import { Users, Plus, Edit2, Trash2, Search, Shield } from 'lucide-react';
+import { User, Role, Permission } from '../types';
+import { Users, Plus, Edit2, Trash2, Search, Shield, CheckSquare, Square } from 'lucide-react';
 
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Quản Trị Viên',
@@ -14,6 +14,20 @@ const ROLE_LABELS: Record<Role, string> = {
   SALE: 'Sale / Phân Phối',
 };
 
+const PERMISSION_LABELS: Record<Permission, string> = {
+  VIEW_DASHBOARD: 'Xem Tổng Quan',
+  MANAGE_USERS: 'Quản Lý Nhân Sự',
+  MANAGE_DEVICES: 'Quản Lý Kho Máy',
+  MANAGE_PARTS: 'Quản Lý Linh Kiện',
+  MANAGE_TASKS: 'Quản Lý Kỹ Thuật',
+  MANAGE_QC: 'Quản Lý QC',
+  MANAGE_SUPPLIERS: 'Quản Lý Nguồn Hàng',
+  MANAGE_PRODUCTS: 'Quản Lý Sản Phẩm',
+  MANAGE_IMPORT: 'Quản Lý Nhập Hàng',
+  MANAGE_DISTRIBUTION: 'Quản Lý Phân Phối',
+  VIEW_REPORTS: 'Xem Báo Cáo',
+};
+
 export default function NhanVien() {
   const { state, dispatch } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
@@ -24,8 +38,10 @@ export default function NhanVien() {
     name: '',
     role: 'KY_THUAT',
     email: '',
+    password: '',
     phone: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    permissions: []
   });
 
   const handleOpenAdd = () => {
@@ -33,17 +49,30 @@ export default function NhanVien() {
       name: '',
       role: 'KY_THUAT',
       email: '',
+      password: '',
       phone: '',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      permissions: []
     });
     setEditingUser(null);
     setIsAdding(true);
   };
 
   const handleOpenEdit = (user: User) => {
-    setFormData({ ...user });
+    setFormData({ ...user, password: '' }); // Don't show password on edit
     setEditingUser(user);
     setIsAdding(true);
+  };
+
+  const handleTogglePermission = (permission: Permission) => {
+    setFormData(prev => {
+      const currentPermissions = prev.permissions || [];
+      if (currentPermissions.includes(permission)) {
+        return { ...prev, permissions: currentPermissions.filter(p => p !== permission) };
+      } else {
+        return { ...prev, permissions: [...currentPermissions, permission] };
+      }
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,19 +80,26 @@ export default function NhanVien() {
     if (!formData.name || !formData.role) return alert('Vui lòng nhập đủ thông tin bắt buộc');
 
     if (editingUser) {
+      const updateData = { ...formData };
+      if (!updateData.password) {
+        delete updateData.password; // Keep old password if not changed
+      }
       dispatch({
         type: 'UPDATE_USER',
-        payload: { ...editingUser, ...formData } as User
+        payload: { ...editingUser, ...updateData } as User
       });
       alert('Đã cập nhật thông tin nhân viên!');
     } else {
+      if (!formData.password) return alert('Vui lòng nhập mật khẩu cho nhân viên mới');
       const newUser: User = {
         id: `u-${Date.now()}`,
         name: formData.name!,
         role: formData.role as Role,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone,
-        status: formData.status as 'ACTIVE' | 'INACTIVE'
+        status: formData.status as 'ACTIVE' | 'INACTIVE',
+        permissions: formData.permissions || []
       };
       dispatch({ type: 'ADD_USER', payload: newUser });
       alert('Đã thêm nhân viên mới!');
@@ -149,6 +185,17 @@ export default function NhanVien() {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-dark-muted">Mật khẩu {editingUser ? '' : '*'}</label>
+              <input 
+                type="password" 
+                className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
+                value={formData.password || ''}
+                onChange={e => setFormData({...formData, password: e.target.value})}
+                placeholder={editingUser ? "Để trống nếu không đổi" : "Nhập mật khẩu"}
+                required={!editingUser}
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-dark-muted">Trạng Thái</label>
               <select 
                 className="mt-1 block w-full rounded-md sm:text-sm p-2 dark-input"
@@ -159,6 +206,32 @@ export default function NhanVien() {
                 <option value="INACTIVE">Đã nghỉ việc</option>
               </select>
             </div>
+            
+            <div className="md:col-span-2 mt-2">
+              <label className="block text-sm font-medium text-dark-muted mb-2">Quyền Hạn (Permissions)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-dark-bg/50 p-4 rounded-xl border border-dark-border">
+                {(Object.keys(PERMISSION_LABELS) as Permission[]).map(permission => {
+                  const isSelected = formData.permissions?.includes(permission);
+                  return (
+                    <div 
+                      key={permission} 
+                      className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-neon-cyan/10 border border-neon-cyan/30' : 'hover:bg-dark-border/50 border border-transparent'}`}
+                      onClick={() => handleTogglePermission(permission)}
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-neon-cyan mr-2 shrink-0" />
+                      ) : (
+                        <Square className="w-5 h-5 text-dark-muted mr-2 shrink-0" />
+                      )}
+                      <span className={`text-sm ${isSelected ? 'text-neon-cyan font-medium' : 'text-dark-text'}`}>
+                        {PERMISSION_LABELS[permission]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
               <button 
                 type="button" 
