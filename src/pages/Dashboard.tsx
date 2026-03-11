@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import DateRangePicker from "../components/DateRangePicker";
-import { startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
+import { startOfDay, endOfDay, isWithinInterval, parseISO, format } from "date-fns";
 import {
   Activity,
   AlertCircle,
@@ -484,7 +484,7 @@ export default function Dashboard() {
                         {device.status}
                       </span>
                       <span className="text-[10px] text-dark-muted">
-                        {device.importDate}
+                        {format(new Date(device.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                       </span>
                     </div>
                   </div>

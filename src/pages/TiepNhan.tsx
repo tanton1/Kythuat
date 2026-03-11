@@ -529,7 +529,7 @@ export default function TiepNhan() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-dark-muted">Ngày nhập:</span>
-                  <span className="text-dark-text">{foundDevice.importDate}</span>
+                  <span className="text-dark-text">{format(new Date(foundDevice.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-dark-muted">Nguồn gốc:</span>

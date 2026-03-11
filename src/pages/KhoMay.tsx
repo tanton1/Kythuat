@@ -400,7 +400,7 @@ export default function KhoMay() {
                     )}
                     {visibleColumns.importDate && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">
-                        {device.importDate}
+                        {format(new Date(device.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                       </td>
                     )}
                     {visibleColumns.location && (

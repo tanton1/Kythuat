@@ -3,15 +3,15 @@ import { useAppContext } from "../store/AppContext";
 import { Search, Filter, FileText, Calendar, DollarSign, Package, User, Store, Copy, Edit, Trash2, UserPlus } from "lucide-react";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import DateRangePicker from "../components/DateRangePicker";
 
 export default function PhieuNhapHang() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
   
   const [searchImei, setSearchImei] = useState("");
-  const [dateRangeType, setDateRangeType] = useState("this_month");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
+  const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
   const [activeSource, setActiveSource] = useState('ALL');
   const [selectedNcc, setSelectedNcc] = useState('Tất cả');
   
@@ -80,31 +80,8 @@ export default function PhieuNhapHang() {
       }
       
       // 3. Lọc theo khung thời gian
-      let start = new Date(0);
-      let end = new Date(8640000000000000);
-      const today = new Date();
-
-      if (dateRangeType === 'today') {
-        start = startOfDay(today);
-        end = endOfDay(today);
-      } else if (dateRangeType === 'yesterday') {
-        const yesterday = subDays(today, 1);
-        start = startOfDay(yesterday);
-        end = endOfDay(yesterday);
-      } else if (dateRangeType === 'this_week') {
-        start = startOfWeek(today, { weekStartsOn: 1 });
-        end = endOfWeek(today, { weekStartsOn: 1 });
-      } else if (dateRangeType === 'this_month') {
-        start = startOfMonth(today);
-        end = endOfMonth(today);
-      } else if (dateRangeType === 'last_month') {
-        const lastMonth = subMonths(today, 1);
-        start = startOfMonth(lastMonth);
-        end = endOfMonth(lastMonth);
-      } else if (dateRangeType === 'custom') {
-        start = dateFrom ? startOfDay(new Date(dateFrom)) : new Date(0);
-        end = dateTo ? endOfDay(new Date(dateTo)) : new Date(8640000000000000);
-      }
+      const start = startOfDay(new Date(dateFrom));
+      const end = endOfDay(new Date(dateTo));
 
       try {
         const receiptDate = parseISO(receipt.importDate.replace(' ', 'T'));
@@ -117,7 +94,7 @@ export default function PhieuNhapHang() {
       
       return true;
     }).sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
-  }, [state.importReceipts, searchImei, dateRangeType, dateFrom, dateTo, activeSource, selectedNcc]);
+  }, [state.importReceipts, searchImei, dateFrom, dateTo, activeSource, selectedNcc]);
 
   const totalImportAmount = filteredReceipts.reduce((sum, r) => sum + r.totalAmount, 0);
   const totalItems = filteredReceipts.reduce((sum, r) => sum + r.items.length, 0);
@@ -233,45 +210,14 @@ export default function PhieuNhapHang() {
             </div>
           </div>
           
-          <div>
+          <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-dark-muted mb-1">Thời gian</label>
-            <select
-              className="w-full dark-input p-2 rounded-md text-sm"
-              value={dateRangeType}
-              onChange={(e) => setDateRangeType(e.target.value)}
-            >
-              <option value="today">Hôm nay</option>
-              <option value="yesterday">Hôm qua</option>
-              <option value="this_week">Tuần này</option>
-              <option value="this_month">Tháng này</option>
-              <option value="last_month">Tháng trước</option>
-              <option value="custom">Tuỳ chỉnh</option>
-              <option value="all">Tất cả thời gian</option>
-            </select>
+            <DateRangePicker 
+              startDate={dateFrom} 
+              endDate={dateTo} 
+              onChange={(s, e) => { setDateFrom(s); setDateTo(e); }} 
+            />
           </div>
-          
-          {dateRangeType === 'custom' && (
-            <div className="flex space-x-2">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-dark-muted mb-1">Từ ngày</label>
-                <input
-                  type="date"
-                  className="w-full dark-input p-2 rounded-md text-sm"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-dark-muted mb-1">Đến ngày</label>
-                <input
-                  type="date"
-                  className="w-full dark-input p-2 rounded-md text-sm"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -328,7 +274,7 @@ export default function PhieuNhapHang() {
                   return (
                     <tr key={receipt.id} className="hover:bg-dark-bg/50 transition-colors">
                       <td className="px-4 py-3 text-sm font-mono text-neon-cyan">{receipt.id.split('-')[1]}</td>
-                      <td className="px-4 py-3 text-sm text-dark-text">{receipt.importDate}</td>
+                      <td className="px-4 py-3 text-sm text-dark-text">{format(new Date(receipt.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</td>
                       <td className="px-4 py-3 text-sm text-dark-text font-medium">{receipt.supplierName}</td>
                       <td className="px-4 py-3 text-sm text-dark-text">{receipt.items.length} máy</td>
                       <td className="px-4 py-3 text-sm font-medium text-neon-green">{receipt.totalAmount.toLocaleString()} đ</td>
@@ -401,7 +347,7 @@ export default function PhieuNhapHang() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-dark-bg p-3 rounded-lg border border-dark-border">
                   <p className="text-xs text-dark-muted mb-1 flex items-center"><Calendar className="w-3 h-3 mr-1"/> Ngày nhập</p>
-                  <p className="text-sm font-medium text-dark-text">{selectedReceipt.importDate}</p>
+                  <p className="text-sm font-medium text-dark-text">{format(new Date(selectedReceipt.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</p>
                 </div>
                 <div className="bg-dark-bg p-3 rounded-lg border border-dark-border">
                   <p className="text-xs text-dark-muted mb-1 flex items-center"><Store className="w-3 h-3 mr-1"/> Nhà cung cấp</p>

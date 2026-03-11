@@ -157,7 +157,7 @@ export default function LichSuThietBi() {
                 <span className="text-sm text-dark-muted">Ngày nhập:</span>
                 <span className="text-sm text-dark-text flex items-center">
                   <Calendar className="w-3 h-3 mr-1" />
-                  {device.importDate}
+                  {format(new Date(device.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -219,7 +219,7 @@ export default function LichSuThietBi() {
               {/* Event: Nhập kho */}
               <div className="relative pl-6">
                 <div className="absolute w-3 h-3 bg-neon-green rounded-full -left-[6.5px] top-1.5 shadow-[0_0_8px_rgba(0,255,0,0.5)]"></div>
-                <div className="text-xs text-dark-muted mb-1">{device.importDate}</div>
+                <div className="text-xs text-dark-muted mb-1">{format(new Date(device.importDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</div>
                 <div className="bg-dark-bg border border-dark-border p-3 rounded-lg">
                   <h4 className="text-sm font-bold text-dark-text">Nhập kho hệ thống</h4>
                   <p className="text-xs text-dark-muted mt-1">Nguồn: {device.source} - Người nhận: {state.users.find(u => u.id === device.receiverId)?.name}</p>
@@ -235,7 +235,7 @@ export default function LichSuThietBi() {
                 return (
                   <div key={task.id} className="relative pl-6">
                     <div className={`absolute w-3 h-3 rounded-full -left-[6.5px] top-1.5 ${isCompleted ? 'bg-neon-cyan shadow-[0_0_8px_rgba(0,255,255,0.5)]' : 'bg-yellow-400 shadow-[0_0_8px_rgba(255,255,0,0.5)]'}`}></div>
-                    <div className="text-xs text-dark-muted mb-1">{task.createdAt}</div>
+                    <div className="text-xs text-dark-muted mb-1">{format(new Date(task.createdAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</div>
                     <div className="bg-dark-bg border border-dark-border p-3 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-sm font-bold text-dark-text">{task.type}</h4>
@@ -283,7 +283,7 @@ export default function LichSuThietBi() {
                 return (
                   <div key={qc.id} className="relative pl-6">
                     <div className={`absolute w-3 h-3 rounded-full -left-[6.5px] top-1.5 ${isPass ? 'bg-neon-green shadow-[0_0_8px_rgba(0,255,0,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(255,0,0,0.5)]'}`}></div>
-                    <div className="text-xs text-dark-muted mb-1">{qc.testedAt}</div>
+                    <div className="text-xs text-dark-muted mb-1">{format(new Date(qc.testedAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</div>
                     <div className="bg-dark-bg border border-dark-border p-3 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-sm font-bold text-dark-text">Kiểm tra QC</h4>

@@ -277,7 +277,7 @@ export default function KyThuat() {
                   </p>
                   <div className={`mt-2 flex items-center text-xs ${deadlineColor}`}>
                     <Clock className="w-3 h-3 mr-1" />
-                    Deadline: {task.deadline.replace("T", " ")}
+                    Deadline: {format(new Date(task.deadline), "dd/MM/yyyy HH:mm")}
                     {isOverdue && <span className="ml-2 uppercase text-[10px]">[Quá hạn]</span>}
                     {isApproaching && <span className="ml-2 uppercase text-[10px]">[Sắp hết hạn]</span>}
                   </div>
@@ -458,7 +458,7 @@ export default function KyThuat() {
                                     {part?.name} x{pr.quantity}
                                   </p>
                                   <p className="text-xs text-dark-muted">
-                                    {pr.requestedAt}
+                                    {format(new Date(pr.requestedAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                                   </p>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -569,7 +569,7 @@ export default function KyThuat() {
                                   {i.status}
                                 </span>
                                 <p className="text-xs text-dark-muted">
-                                  {i.reportedAt}
+                                  {format(new Date(i.reportedAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                                 </p>
                               </div>
                               <p className="text-sm text-dark-text whitespace-pre-wrap">
@@ -795,7 +795,7 @@ export default function KyThuat() {
                       <div key={pr.id} className="p-4 flex justify-between items-center bg-dark-card">
                         <div>
                           <p className="font-medium text-dark-text">{part?.name}</p>
-                          <p className="text-xs text-dark-muted">{pr.requestedAt}</p>
+                          <p className="text-xs text-dark-muted">{format(new Date(pr.requestedAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</p>
                         </div>
                         <div className="text-right">
                           <span className="font-bold text-dark-text mr-3">x{pr.quantity}</span>

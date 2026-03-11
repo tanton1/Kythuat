@@ -274,7 +274,7 @@ export default function PhanPhoi() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-neon-green">{device.sellPrice?.toLocaleString('vi-VN')} đ</p>
-                  <p className="text-xs text-dark-muted mt-1">{device.sellDate}</p>
+                  <p className="text-xs text-dark-muted mt-1">{format(new Date(device.sellDate.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}</p>
                 </div>
               </div>
             ))}

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useAppContext } from "../store/AppContext";
 import { DollarSign, TrendingUp, CheckCircle2, AlertCircle, Calendar, Filter } from "lucide-react";
-import { format, startOfMonth, endOfMonth, isWithinInterval, parse, subMonths, startOfDay, endOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parse, subMonths, startOfDay, endOfDay, parseISO } from "date-fns";
+import DateRangePicker from "../components/DateRangePicker";
 
 export default function BaoCaoThuNhap() {
   const { state } = useAppContext();
@@ -23,10 +24,10 @@ export default function BaoCaoThuNhap() {
       if (!isTargetTech || !task.commission) return false;
 
       try {
-        const taskDate = parse(task.createdAt.split(" ")[0], "yyyy-MM-dd", new Date());
+        const taskDate = parseISO(task.createdAt.replace(' ', 'T'));
         return isWithinInterval(taskDate, {
-          start: parse(dateRange.start, "yyyy-MM-dd", new Date()),
-          end: parse(dateRange.end, "yyyy-MM-dd", new Date()),
+          start: startOfDay(new Date(dateRange.start)),
+          end: endOfDay(new Date(dateRange.end)),
         });
       } catch (e) {
         return false;
@@ -73,15 +74,11 @@ export default function BaoCaoThuNhap() {
               ))}
             </select>
           )}
-          <button onClick={() => setPresetRange('THIS_MONTH')} className="text-xs text-dark-muted hover:text-neon-cyan">Tháng này</button>
-          <button onClick={() => setPresetRange('LAST_MONTH')} className="text-xs text-dark-muted hover:text-neon-cyan">Tháng trước</button>
-          <button onClick={() => setPresetRange('ALL')} className="text-xs text-dark-muted hover:text-neon-cyan">Tất cả</button>
-          <div className="flex items-center space-x-1 border-l border-dark-border pl-2">
-            <Calendar className="w-4 h-4 text-dark-muted" />
-            <input type="date" className="bg-transparent text-xs text-dark-text focus:outline-none" value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} />
-            <span className="text-dark-muted">-</span>
-            <input type="date" className="bg-transparent text-xs text-dark-text focus:outline-none" value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} />
-          </div>
+          <DateRangePicker 
+            startDate={dateRange.start} 
+            endDate={dateRange.end} 
+            onChange={(s, e) => setDateRange({ start: s, end: e })} 
+          />
         </div>
       </div>
 
@@ -149,7 +146,7 @@ export default function BaoCaoThuNhap() {
                 return (
                   <tr key={task.id} className="hover:bg-dark-border/30">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">
-                      {task.createdAt.split(" ")[0]}
+                      {format(new Date(task.createdAt.replace(' ', 'T')), "dd/MM/yyyy")}
                     </td>
                     {!isTechnician && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-neon-cyan font-medium">

@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { Device, Task } from "../types";
 import { Settings, UserPlus, Clock, AlertTriangle } from "lucide-react";
-import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from "date-fns";
+import DateRangePicker from "../components/DateRangePicker";
+import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 
 export default function DieuPhoi() {
   const { state, dispatch } = useAppContext();
@@ -20,9 +21,8 @@ export default function DieuPhoi() {
   // Filters for Task Đang Chạy
   const [activeTechTab, setActiveTechTab] = useState<string>("ALL");
   const [taskSearchImei, setTaskSearchImei] = useState("");
-  const [taskDateRangeType, setTaskDateRangeType] = useState("this_month");
-  const [taskDateFrom, setTaskDateFrom] = useState("");
-  const [taskDateTo, setTaskDateTo] = useState("");
+  const [taskDateFrom, setTaskDateFrom] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
+  const [taskDateTo, setTaskDateTo] = useState(new Date().toISOString().split('T')[0]);
 
   const pendingDevices = state.devices.filter(
     (d) => d.status === "CHO_PHAN_TASK",
@@ -45,46 +45,21 @@ export default function DieuPhoi() {
       if (taskSearchImei && device && !device.imei.toLowerCase().includes(taskSearchImei.toLowerCase())) return false;
 
       // Filter by date
-      if (taskDateRangeType !== 'all') {
-        let start = new Date(0);
-        let end = new Date(8640000000000000);
-        const today = new Date();
+      const start = startOfDay(new Date(taskDateFrom));
+      const end = endOfDay(new Date(taskDateTo));
 
-        if (taskDateRangeType === 'today') {
-          start = startOfDay(today);
-          end = endOfDay(today);
-        } else if (taskDateRangeType === 'yesterday') {
-          const yesterday = subDays(today, 1);
-          start = startOfDay(yesterday);
-          end = endOfDay(yesterday);
-        } else if (taskDateRangeType === 'this_week') {
-          start = startOfWeek(today, { weekStartsOn: 1 });
-          end = endOfWeek(today, { weekStartsOn: 1 });
-        } else if (taskDateRangeType === 'this_month') {
-          start = startOfMonth(today);
-          end = endOfMonth(today);
-        } else if (taskDateRangeType === 'last_month') {
-          const lastMonth = subMonths(today, 1);
-          start = startOfMonth(lastMonth);
-          end = endOfMonth(lastMonth);
-        } else if (taskDateRangeType === 'custom') {
-          start = taskDateFrom ? startOfDay(new Date(taskDateFrom)) : new Date(0);
-          end = taskDateTo ? endOfDay(new Date(taskDateTo)) : new Date(8640000000000000);
+      try {
+        const taskDate = parseISO(t.createdAt.replace(' ', 'T'));
+        if (!isWithinInterval(taskDate, { start, end })) {
+          return false;
         }
-
-        try {
-          const taskDate = parseISO(t.createdAt.replace(' ', 'T'));
-          if (!isWithinInterval(taskDate, { start, end })) {
-            return false;
-          }
-        } catch (e) {
-          // Fallback if date parsing fails
-        }
+      } catch (e) {
+        // Fallback if date parsing fails
       }
 
       return true;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [state.tasks, state.devices, activeTechTab, taskSearchImei, taskDateRangeType, taskDateFrom, taskDateTo]);
+  }, [state.tasks, state.devices, activeTechTab, taskSearchImei, taskDateFrom, taskDateTo]);
 
   const activeTasks = state.tasks.filter(
     (t) => !["HOAN_THANH_CHO_QC", "DONG_TASK", "HUY_TASK"].includes(t.status),
@@ -467,35 +442,11 @@ export default function DieuPhoi() {
               value={taskSearchImei}
               onChange={(e) => setTaskSearchImei(e.target.value)}
             />
-            <select
-              className="p-2 rounded-md bg-dark-bg border border-dark-border text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan outline-none"
-              value={taskDateRangeType}
-              onChange={(e) => setTaskDateRangeType(e.target.value)}
-            >
-              <option value="today">Hôm nay</option>
-              <option value="yesterday">Hôm qua</option>
-              <option value="this_week">Tuần này</option>
-              <option value="this_month">Tháng này</option>
-              <option value="last_month">Tháng trước</option>
-              <option value="all">Tất cả thời gian</option>
-              <option value="custom">Tuỳ chỉnh</option>
-            </select>
-            {taskDateRangeType === 'custom' && (
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  className="p-2 rounded-md bg-dark-bg border border-dark-border text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan outline-none"
-                  value={taskDateFrom}
-                  onChange={(e) => setTaskDateFrom(e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="p-2 rounded-md bg-dark-bg border border-dark-border text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan outline-none"
-                  value={taskDateTo}
-                  onChange={(e) => setTaskDateTo(e.target.value)}
-                />
-              </div>
-            )}
+            <DateRangePicker 
+              startDate={taskDateFrom} 
+              endDate={taskDateTo} 
+              onChange={(s, e) => { setTaskDateFrom(s); setTaskDateTo(e); }} 
+            />
           </div>
         </div>
 
@@ -570,10 +521,10 @@ export default function DieuPhoi() {
                     </span>
                     <p className="text-[10px] text-neon-pink flex items-center justify-end">
                       <Clock className="w-3 h-3 mr-1" />
-                      Deadline: {task.deadline.replace('T', ' ')}
+                      Deadline: {format(new Date(task.deadline), "dd/MM/yyyy HH:mm")}
                     </p>
                     <p className="text-[10px] text-dark-muted mt-1">
-                      Ngày tạo: {task.createdAt}
+                      Ngày tạo: {format(new Date(task.createdAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                     </p>
                   </div>
                 </div>

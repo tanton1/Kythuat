@@ -335,7 +335,7 @@ export default function KhoLinhKien() {
                           KT: {assignee?.name} {request.requestType === 'FOR_STOCK' ? '(Lưu kho)' : ''}
                         </p>
                         <p className="text-xs text-dark-muted/70 mt-1">
-                          {request.exportedAt}
+                          {format(new Date(request.exportedAt.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                         </p>
                       </div>
                       <span

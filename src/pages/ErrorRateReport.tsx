@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../store/AppContext';
+import { format } from 'date-fns';
 import { 
   AlertTriangle, 
   ShieldX, 
@@ -370,7 +371,7 @@ export default function ErrorRateReport() {
                 filteredEvents.map((event) => (
                   <tr key={event.id} className="border-b border-dark-border hover:bg-dark-bg/50 transition-colors">
                     <td className="px-4 py-3 text-dark-muted whitespace-nowrap">
-                      {new Date(event.date).toLocaleString('vi-VN')}
+                      {format(new Date(event.date.replace(' ', 'T')), "dd/MM/yyyy HH:mm")}
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-mono text-neon-cyan font-bold"><button onClick={() => navigate(`/thiet-bi/${event.imei}`)} className="hover:underline">{event.imei}</button></div>
