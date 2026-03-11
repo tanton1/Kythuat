@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import DateRangePicker from "../components/DateRangePicker";
+import { startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import {
   Activity,
   AlertCircle,
@@ -51,9 +52,16 @@ export default function Dashboard() {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   const filteredDevices = useMemo(() => {
+    const start = startOfDay(new Date(startDate));
+    const end = endOfDay(new Date(endDate));
+
     return state.devices.filter(d => {
-      const importDate = new Date(d.importDate || '2000-01-01');
-      return importDate >= new Date(startDate) && importDate <= new Date(endDate);
+      try {
+        const importDate = parseISO(d.importDate.replace(' ', 'T'));
+        return isWithinInterval(importDate, { start, end });
+      } catch (e) {
+        return true;
+      }
     });
   }, [state.devices, startDate, endDate]);
 

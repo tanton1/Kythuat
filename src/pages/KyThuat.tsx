@@ -12,7 +12,7 @@ import {
   Clock,
   Box,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 
 export default function KyThuat() {
   const { state, dispatch } = useAppContext();
@@ -33,12 +33,21 @@ export default function KyThuat() {
   const [usedParts, setUsedParts] = useState<{partId: string, quantity: number}[]>([]);
 
   const myTasks = useMemo(() => {
+    const start = startOfDay(new Date(startDate));
+    const end = endOfDay(new Date(endDate));
+
     return state.tasks.filter(
-      (t) =>
-        t.assigneeId === state.currentUser?.id &&
-        !["DONG_TASK", "HUY_TASK"].includes(t.status) &&
-        new Date(t.createdAt || '2000-01-01') >= new Date(startDate) &&
-        new Date(t.createdAt || '2000-01-01') <= new Date(endDate)
+      (t) => {
+        if (t.assigneeId !== state.currentUser?.id) return false;
+        if (["DONG_TASK", "HUY_TASK"].includes(t.status)) return false;
+        
+        try {
+          const taskDate = parseISO(t.createdAt.replace(' ', 'T'));
+          return isWithinInterval(taskDate, { start, end });
+        } catch (e) {
+          return true; // Fallback
+        }
+      }
     );
   }, [state.tasks, state.currentUser?.id, startDate, endDate]);
 
