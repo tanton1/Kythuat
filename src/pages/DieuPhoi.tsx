@@ -8,7 +8,7 @@ import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfM
 export default function DieuPhoi() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
   const [newTask, setNewTask] = useState<Partial<Task>>({
     type: "Thay Pin",
     description: "",
@@ -92,53 +92,59 @@ export default function DieuPhoi() {
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedDevice || !newTask.assigneeId)
-      return alert("Vui lòng chọn máy và kỹ thuật viên");
+    if (selectedDeviceIds.length === 0 || !newTask.assigneeId)
+      return alert("Vui lòng chọn ít nhất một máy và kỹ thuật viên");
 
     const selectedProduct = state.products.find(p => p.name === newTask.type);
 
-    const task: Task = {
-      id: `task-${Date.now()}`,
-      deviceId: selectedDevice.id,
-      type: newTask.type!,
-      description: newTask.description || "",
-      priority: newTask.priority as any,
-      assigneeId: newTask.assigneeId!,
-      assignerId: state.currentUser!.id,
-      deadline: newTask.deadline!,
-      status: "MOI_TAO",
-      notes: "",
-      createdAt: format(new Date(), "yyyy-MM-dd HH:mm"),
-      commission: selectedProduct?.commission || 0,
-    };
+    selectedDeviceIds.forEach(deviceId => {
+      const device = state.devices.find(d => d.id === deviceId);
+      if (!device) return;
 
-    dispatch({ type: "ADD_TASK", payload: task });
+      const task: Task = {
+        id: `task-${Date.now()}-${deviceId}`,
+        deviceId: device.id,
+        type: newTask.type!,
+        description: newTask.description || "",
+        priority: newTask.priority as any,
+        assigneeId: newTask.assigneeId!,
+        assignerId: state.currentUser!.id,
+        deadline: newTask.deadline!,
+        status: "MOI_TAO",
+        notes: "",
+        createdAt: format(new Date(), "yyyy-MM-dd HH:mm"),
+        commission: selectedProduct?.commission || 0,
+      };
 
-    // Add notification for technician
-    dispatch({
-      type: "ADD_NOTIFICATION",
-      payload: {
-        id: `noti-${Date.now()}`,
-        userId: task.assigneeId,
-        title: "Bạn có Task mới!",
-        message: `Bạn vừa được giao task "${task.type}" cho máy ${selectedDevice.model}.`,
-        type: "TASK_ASSIGNED",
-        link: "/ky-thuat",
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      },
+      dispatch({ type: "ADD_TASK", payload: task });
+
+      // Add notification for technician
+      dispatch({
+        type: "ADD_NOTIFICATION",
+        payload: {
+          id: `noti-${Date.now()}-${deviceId}`,
+          userId: task.assigneeId,
+          title: "Bạn có Task mới!",
+          message: `Bạn vừa được giao task "${task.type}" cho máy ${device.model}.`,
+          type: "TASK_ASSIGNED",
+          link: "/ky-thuat",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      // Update device status if it's the first task
+      if (device.status === "CHO_PHAN_TASK") {
+        dispatch({
+          type: "UPDATE_DEVICE",
+          payload: { ...device, status: "DANG_XU_LY" },
+        });
+      }
     });
 
-    // Update device status if it's the first task
-    if (selectedDevice.status === "CHO_PHAN_TASK") {
-      dispatch({
-        type: "UPDATE_DEVICE",
-        payload: { ...selectedDevice, status: "DANG_XU_LY" },
-      });
-    }
-
     setNewTask({ ...newTask, description: "" });
-    alert("Đã tạo task thành công!");
+    setSelectedDeviceIds([]);
+    alert(`Đã tạo task thành công cho ${selectedDeviceIds.length} máy!`);
   };
 
   const handleResolveIncident = (incident: any, action: 'RESUME' | 'NEW_TASK') => {
@@ -170,7 +176,7 @@ export default function DieuPhoi() {
       alert("Đã cho phép tiếp tục task!");
     } else if (action === 'NEW_TASK') {
       if (device) {
-        setSelectedDevice(device);
+        setSelectedDeviceIds([device.id]);
         setNewTask({ ...newTask, description: `[Xử lý sự cố]: ${incident.description}\n` });
       }
     }
@@ -225,28 +231,52 @@ export default function DieuPhoi() {
           )}
 
           <div className="bg-dark-card rounded-xl shadow-sm border border-dark-border overflow-hidden">
-            <div className="p-4 border-b border-dark-border bg-yellow-500/10">
+            <div className="p-4 border-b border-dark-border bg-yellow-500/10 flex justify-between items-center">
               <h3 className="text-lg font-medium text-yellow-500 flex items-center">
                 <AlertTriangle className="w-5 h-5 mr-2" />
                 Cần Phân Task ({pendingDevices.length})
               </h3>
-            </div>
-            <div className="divide-y divide-dark-border max-h-[300px] overflow-y-auto">
-              {pendingDevices.map((device) => (
-                <div
-                  key={device.id}
-                  onClick={() => setSelectedDevice(device)}
-                  className={`p-4 cursor-pointer hover:bg-dark-border transition-colors ${selectedDevice?.id === device.id ? "bg-dark-bg border-l-4 border-yellow-500" : ""}`}
+              {selectedDeviceIds.length > 0 && (
+                <button 
+                  onClick={() => setSelectedDeviceIds([])}
+                  className="text-xs text-dark-muted hover:text-neon-pink transition-colors"
                 >
-                  <p className="font-medium text-dark-text">{device.model}</p>
-                  <p className="text-xs text-dark-muted font-mono mt-1">
-                    IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button>
-                  </p>
-                  <p className="text-xs text-neon-pink mt-2 line-clamp-2">
-                    Lỗi: {device.notes.split("[TEST ĐẦU VÀO]:")[1] || "Chưa rõ"}
-                  </p>
-                </div>
-              ))}
+                  Bỏ chọn tất cả ({selectedDeviceIds.length})
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-dark-border max-h-[400px] overflow-y-auto">
+              {pendingDevices.map((device) => {
+                const isSelected = selectedDeviceIds.includes(device.id);
+                return (
+                  <div
+                    key={device.id}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedDeviceIds(selectedDeviceIds.filter(id => id !== device.id));
+                      } else {
+                        setSelectedDeviceIds([...selectedDeviceIds, device.id]);
+                      }
+                    }}
+                    className={`p-4 cursor-pointer hover:bg-dark-border transition-colors relative ${isSelected ? "bg-dark-bg border-l-4 border-yellow-500" : ""}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? "bg-yellow-500 border-yellow-500" : "border-dark-border"}`}>
+                        {isSelected && <div className="w-2 h-2 bg-dark-bg rounded-sm" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-dark-text">{device.model}</p>
+                        <p className="text-xs text-dark-muted font-mono mt-1">
+                          IMEI: <button onClick={(e) => { e.stopPropagation(); navigate(`/thiet-bi/${device.imei}`); }} className="text-neon-cyan hover:underline">{device.imei}</button>
+                        </p>
+                        <p className="text-xs text-neon-pink mt-2 line-clamp-2">
+                          Lỗi: {device.notes.split("[TEST ĐẦU VÀO]:")[1] || "Chưa rõ"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
               {pendingDevices.length === 0 && (
                 <div className="p-6 text-center text-dark-muted text-sm">
                   Không có máy chờ phân task.
@@ -260,26 +290,35 @@ export default function DieuPhoi() {
 
         {/* Cột phải: Form tạo task */}
         <div className="col-span-2">
-          {selectedDevice ? (
+          {selectedDeviceIds.length > 0 ? (
             <div className="bg-dark-card rounded-xl shadow-sm border border-dark-border">
               <div className="p-6 border-b border-dark-border bg-dark-bg/50">
                 <h2 className="text-xl font-semibold text-dark-text">
-                  Tạo Task Mới
+                  Tạo Task Mới ({selectedDeviceIds.length} máy)
                 </h2>
-                <div className="mt-4 p-4 bg-dark-bg border border-dark-border rounded-lg">
-                  <p className="font-medium text-dark-text">
-                    {selectedDevice.model}
-                  </p>
-                  <p className="text-sm text-dark-muted font-mono">
-                    IMEI: <button onClick={() => navigate(`/thiet-bi/${selectedDevice.imei}`)} className="text-neon-cyan hover:underline">{selectedDevice.imei}</button>
-                  </p>
-                  <div className="mt-3 text-sm text-yellow-500 bg-yellow-500/10 p-3 rounded border border-yellow-500/30">
-                    <strong>Ghi chú test đầu vào:</strong>
-                    <p className="mt-1 whitespace-pre-wrap">
-                      {selectedDevice.notes.split("[TEST ĐẦU VÀO]:")[1] ||
-                        selectedDevice.notes}
-                    </p>
-                  </div>
+                <div className="mt-4 space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                  {selectedDeviceIds.map(id => {
+                    const device = state.devices.find(d => d.id === id);
+                    if (!device) return null;
+                    return (
+                      <div key={id} className="p-3 bg-dark-bg border border-dark-border rounded-lg flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-dark-text text-sm">
+                            {device.model}
+                          </p>
+                          <p className="text-xs text-dark-muted font-mono">
+                            IMEI: {device.imei}
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => setSelectedDeviceIds(selectedDeviceIds.filter(sid => sid !== id))}
+                          className="text-xs text-neon-pink hover:underline"
+                        >
+                          Gỡ
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -389,7 +428,7 @@ export default function DieuPhoi() {
                 <div className="flex justify-end space-x-3 pt-4 border-t border-dark-border">
                   <button
                     type="button"
-                    onClick={() => setSelectedDevice(null)}
+                    onClick={() => setSelectedDeviceIds([])}
                     className="px-4 py-2 border border-dark-border rounded-md text-sm font-medium text-dark-muted hover:bg-dark-border hover:text-dark-text"
                   >
                     Hủy
@@ -491,21 +530,41 @@ export default function DieuPhoi() {
           {filteredActiveTasks.map((task) => {
             const device = state.devices.find((d) => d.id === task.deviceId);
             const assignee = state.users.find((u) => u.id === task.assigneeId);
+            
+            const priorityColors = {
+              LOW: "bg-blue-500/10 text-blue-500 border-blue-500/30",
+              NORMAL: "bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30",
+              HIGH: "bg-neon-pink/10 text-neon-pink border-neon-pink/30",
+            };
+
             return (
               <div key={task.id} className="p-4 bg-dark-bg hover:bg-dark-border/30 transition-colors">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-dark-text text-sm">
-                      {task.type}
-                    </p>
-                    <p className="text-xs text-dark-muted mt-1">
-                      Máy: {device?.model} - IMEI: <button onClick={() => navigate(`/thiet-bi/${device?.imei}`)} className="text-neon-cyan hover:underline">{device?.imei}</button>
-                    </p>
-                    <p className="text-xs text-dark-muted mt-1">
-                      KTV: <span className="text-neon-cyan">{assignee?.name}</span>
-                    </p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-dark-text text-sm">
+                        {task.type}
+                      </p>
+                      <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-bold ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
+                        {task.priority}
+                      </span>
+                    </div>
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                      <p className="text-xs text-dark-muted flex items-center">
+                        <span className="w-12">Máy:</span>
+                        <span className="text-dark-text">{device?.model}</span>
+                      </p>
+                      <p className="text-xs text-dark-muted flex items-center">
+                        <span className="w-12">IMEI:</span>
+                        <button onClick={() => navigate(`/thiet-bi/${device?.imei}`)} className="text-neon-cyan hover:underline font-mono">{device?.imei}</button>
+                      </p>
+                      <p className="text-xs text-dark-muted flex items-center">
+                        <span className="w-12">KTV:</span>
+                        <span className="text-neon-cyan font-medium">{assignee?.name}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ml-4">
                     <span className="text-[10px] font-semibold bg-dark-border text-dark-muted px-2 py-0.5 rounded-full inline-block mb-2">
                       {task.status}
                     </span>
