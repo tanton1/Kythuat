@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAppContext } from "../store/AppContext";
 import { MOCK_USERS } from "../store/AppContext";
 import {
@@ -26,6 +27,7 @@ import {
   Activity,
   BookOpen,
   AlertTriangle,
+  KeyRound
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -85,6 +87,8 @@ export default function Layout() {
   const { state, dispatch } = useAppContext();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ old: '', new: '', confirm: '' });
 
   // Close sidebar on mobile when route changes
   React.useEffect(() => {
@@ -98,12 +102,45 @@ export default function Layout() {
     if (user) {
       dispatch({ type: "SET_USER", payload: user });
       localStorage.setItem("phonehouse_user", JSON.stringify(user));
+      toast.success(`Đã chuyển sang tài khoản: ${user.name}`);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("phonehouse_user");
     window.location.href = "/"; // Simple reload to clear state
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!state.currentUser) return;
+
+    // Check old password
+    const isOldPasswordValid = state.currentUser.password === passwordForm.old || (!state.currentUser.password && passwordForm.old === '123456');
+    
+    if (!isOldPasswordValid) {
+      toast.error('Mật khẩu hiện tại không đúng');
+      return;
+    }
+
+    if (passwordForm.new !== passwordForm.confirm) {
+      toast.error('Mật khẩu mới không khớp');
+      return;
+    }
+
+    if (passwordForm.new.length < 6) {
+      toast.error('Mật khẩu mới phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    const updatedUser = { ...state.currentUser, password: passwordForm.new };
+    dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+    dispatch({ type: 'SET_USER', payload: updatedUser });
+    localStorage.setItem("phonehouse_user", JSON.stringify(updatedUser));
+    
+    toast.success('Đổi mật khẩu thành công!');
+    setIsChangePasswordOpen(false);
+    setPasswordForm({ old: '', new: '', confirm: '' });
   };
 
   return (
@@ -198,13 +235,22 @@ export default function Layout() {
                 <p className="text-[10px] text-neon-pink uppercase tracking-wider">{state.currentUser?.role}</p>
               </div>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="p-2 text-dark-muted hover:text-neon-pink transition-colors"
-              title="Đăng xuất"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="flex items-center">
+              <button 
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="p-2 text-dark-muted hover:text-neon-cyan transition-colors"
+                title="Đổi mật khẩu"
+              >
+                <KeyRound className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="p-2 text-dark-muted hover:text-neon-pink transition-colors"
+                title="Đăng xuất"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Role switcher for ADMIN only */}
@@ -286,6 +332,67 @@ export default function Layout() {
           })}
         </nav>
       </div>
+      {/* Change Password Modal */}
+      {isChangePasswordOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-card border border-dark-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-bold text-dark-text mb-4 flex items-center">
+              <KeyRound className="w-5 h-5 mr-2 text-neon-cyan" />
+              Đổi Mật Khẩu
+            </h2>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-dark-muted mb-1">Mật khẩu hiện tại</label>
+                <input 
+                  type="password" 
+                  required
+                  className="w-full p-2 rounded-md bg-dark-bg border border-dark-border text-dark-text focus:ring-1 focus:ring-neon-cyan outline-none"
+                  value={passwordForm.old}
+                  onChange={e => setPasswordForm({...passwordForm, old: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-muted mb-1">Mật khẩu mới</label>
+                <input 
+                  type="password" 
+                  required
+                  className="w-full p-2 rounded-md bg-dark-bg border border-dark-border text-dark-text focus:ring-1 focus:ring-neon-cyan outline-none"
+                  value={passwordForm.new}
+                  onChange={e => setPasswordForm({...passwordForm, new: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-muted mb-1">Xác nhận mật khẩu mới</label>
+                <input 
+                  type="password" 
+                  required
+                  className="w-full p-2 rounded-md bg-dark-bg border border-dark-border text-dark-text focus:ring-1 focus:ring-neon-cyan outline-none"
+                  value={passwordForm.confirm}
+                  onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})}
+                />
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsChangePasswordOpen(false);
+                    setPasswordForm({ old: '', new: '', confirm: '' });
+                  }}
+                  className="px-4 py-2 border border-dark-border rounded-md text-sm font-medium text-dark-muted hover:bg-dark-border hover:text-dark-text transition-colors"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 rounded-md shadow-sm text-sm font-medium neon-button"
+                >
+                  Đổi Mật Khẩu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

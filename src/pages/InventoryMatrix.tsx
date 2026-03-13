@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../store/AppContext";
 import { DeviceLocation } from "../types";
-import { Table, LayoutDashboard, Smartphone, MapPin, User } from "lucide-react";
+import { Table, LayoutDashboard, Smartphone, MapPin, User, Download } from "lucide-react";
 
 const APPEARANCES = ['LN', '99%', 'OTHER'] as const;
 
@@ -99,18 +99,75 @@ export default function InventoryMatrix() {
 
     activeDevices.forEach(d => {
       const holder = getDeviceHolder(d);
-      let app = d.appearance;
-      if (!app || !['LN', '99%'].includes(app)) {
-        app = 'OTHER';
-      }
-
+      const app = d.appearance || 'OTHER';
       if (data[d.model] && data[d.model][holder]) {
-        data[d.model][holder][app as any].push(d.imei);
+        if (!data[d.model][holder][app]) {
+          data[d.model][holder][app] = [];
+        }
+        data[d.model][holder][app].push(d.imei);
       }
     });
 
     return data;
-  }, [activeDevices, models, holders, state.tasks]);
+  }, [activeDevices, models, holders]);
+
+  const exportToCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM for Excel UTF-8
+    
+    // Header row
+    const headers = ["Model"];
+    holders.forEach(h => {
+      APPEARANCES.forEach(app => {
+        headers.push(`${getHolderName(h)} - ${APPEARANCE_LABELS[app]}`);
+      });
+    });
+    headers.push("Tổng");
+    csvContent += headers.join(",") + "\n";
+
+    // Data rows
+    models.forEach(model => {
+      const row = [model];
+      let rowTotal = 0;
+      
+      holders.forEach(h => {
+        APPEARANCES.forEach(app => {
+          const count = matrixData[model][h][app]?.length || 0;
+          row.push(count.toString());
+          rowTotal += count;
+        });
+      });
+      
+      row.push(rowTotal.toString());
+      csvContent += row.join(",") + "\n";
+    });
+
+    // Total row
+    const totalRow = ["Tổng Cộng"];
+    let grandTotal = 0;
+    
+    holders.forEach(h => {
+      APPEARANCES.forEach(app => {
+        let colTotal = 0;
+        models.forEach(model => {
+          colTotal += matrixData[model][h][app]?.length || 0;
+        });
+        totalRow.push(colTotal.toString());
+        grandTotal += colTotal;
+      });
+    });
+    
+    totalRow.push(grandTotal.toString());
+    csvContent += totalRow.join(",") + "\n";
+
+    // Download
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `BaoCaoTonKho_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const visibleAppearances = useMemo(() => {
     const hasOtherData = models.some(model => 
@@ -131,6 +188,13 @@ export default function InventoryMatrix() {
             Thống kê tồn kho tại Kho Tổng (Nguồn: Nhập mới, Shop chuyển & Thu cũ). Phân loại theo Người giữ máy và Tình trạng.
           </p>
         </div>
+        <button 
+          onClick={exportToCSV}
+          className="neon-button flex items-center shadow-sm"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Xuất Excel (CSV)
+        </button>
       </div>
 
       <div className="bg-dark-card rounded-xl border border-dark-border overflow-hidden shadow-2xl">
